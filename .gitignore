@@ -1,2 +1,5 @@
 # Data directory must be ignored
 /data
+/.vscode
+PoomsaeProConnector/PoomsaePro.db
+output.txt
