@@ -5,10 +5,10 @@ from datetime import date
 
 #Create unified database for PoomsaePro data
 #Needed because the MDBTools can only do single table selects on Linux
-database = sqlite3.connect('PoomsaeProConnector/PoomsaePro.db')
+connmain = sqlite3.connect('PoomsaeProConnector/PoomsaePro.db')
 #create DB in memory for testing
 #database = sqlite3.connect(':memory:')
-curdatabase = database.cursor()
+curdatabase = connmain.cursor()
 
 #build the database
 with open('PoomsaeProConnector/sql/CreateSQLiteDB.sql','r') as file:
@@ -58,7 +58,10 @@ for event in events:
             
             #loop through tables in database
             for i in curevent.tables():
-                if i.table_type == 'TABLE' and i.table_name.replace(" ", "") in curdatabasetables:
+                tablename = i.table_name.replace(" ", "")
+                if tablename in ('Round','Category','Gender'):
+                    tablename = tablename + 'Tbl'
+                if i.table_type == 'TABLE' and tablename in curdatabasetables:
                     #selects all data from the table
                     sql = 'SELECT * FROM ['+ i.table_name + ']'
                     cureventdata.execute(sql)
@@ -71,12 +74,12 @@ for event in events:
                         #update all datetime functions
                         datawid = [tuple(item.strftime('%Y-%m-%d') if isinstance(item, date) else item for item in t) for t in datawid]
                         #update data to match column count
-                        curdatabase.execute(f"PRAGMA table_info("+i.table_name.replace(" ", "")+")")
+                        curdatabase.execute(f"PRAGMA table_info("+tablename+")")
                         columns = curdatabase.fetchall()
                         column_count = len(columns)
                         datawid = [tuple(list(t) + [0] * (column_count - len(t))) for t in datawid]
                         #inserts into the master database
-                        sql = 'INSERT INTO ' + i.table_name.replace(" ", "") + ' VALUES ' + str(datawid).strip('[]')                    
+                        sql = 'INSERT INTO ' + tablename + ' VALUES ' + str(datawid).strip('[]')                    
                         curdatabase.execute(sql)
 
         except pyodbc.Error as e:
@@ -91,4 +94,5 @@ curdatabase.execute('SELECT * FROM Events')
 for row in curdatabase.fetchall():
     print(row)
 
+connmain.commit()
 curdatabase.close()

@@ -14,8 +14,8 @@ def CreateRefereeAssignment (row, refereedata, event):
             refereedata.append(refereeassignment)
 
 #connect to the database
-database = sqlite3.connect('PoomsaeProConnector/PoomsaePro.db')
-curdatabase = database.cursor()
+conn = sqlite3.connect('PoomsaeProConnector/PoomsaePro.db')
+curdatabase = conn.cursor()
 
 #build the referee table
 with open('PoomsaeProConnector/sql/RefereeTableCreate.sql','r') as file:
@@ -42,4 +42,5 @@ for event in events:
     sql = 'INSERT INTO RefereeAssignment VALUES ' + str(refereedata).strip('[]')                    
     curdatabase.execute(sql)
 
+conn.commit()
 curdatabase.close()
