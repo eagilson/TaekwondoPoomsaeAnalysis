@@ -19,7 +19,7 @@ with open('PoomsaeProConnector/sql/CreateSQLiteDB.sql','r') as file:
     file.close()
     
 #generate list of tables for use later
-with open('PoomsaeProConnector/sql/ListSQLiteTables.SQL','r') as file:
+with open('PoomsaeProConnector/sql/ListSQLiteTables.sql','r') as file:
     sql = file.read()
     curdatabase.execute(sql)
     curdatabasetables = curdatabase.fetchall()
