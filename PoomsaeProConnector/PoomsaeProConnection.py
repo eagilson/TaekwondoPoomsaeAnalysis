@@ -11,7 +11,7 @@ database = sqlite3.connect('PoomsaeProConnector/PoomsaePro.db')
 curdatabase = database.cursor()
 
 #build the database
-with open('PoomsaeProConnector/CreateSQLiteDB.sql','r') as file:
+with open('PoomsaeProConnector/sql/CreateSQLiteDB.sql','r') as file:
     sqlcreate = file.read()
     statements = sqlcreate.split(';')
     for sql in statements:
@@ -19,7 +19,7 @@ with open('PoomsaeProConnector/CreateSQLiteDB.sql','r') as file:
     file.close()
     
 #generate list of tables for use later
-with open('PoomsaeProConnector/ListSQLiteTables.SQL','r') as file:
+with open('PoomsaeProConnector/sql/ListSQLiteTables.SQL','r') as file:
     sql = file.read()
     curdatabase.execute(sql)
     curdatabasetables = curdatabase.fetchall()
@@ -50,7 +50,7 @@ for event in events:
             cureventdata = conn.cursor()
 
             #Builds the Event Table
-            with open('PoomsaeProConnector/InsertEvents.sql','r') as file:
+            with open('PoomsaeProConnector/sql/InsertEvents.sql','r') as file:
                 sqlinsert = file.read()
                 file.close()
                 data = (DatabaseID,event['event'],database['day'],database['ring'],event['start-date'],event['end-date'],database['databasename'])
