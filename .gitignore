@@ -3,3 +3,4 @@
 /.vscode
 PoomsaeProConnector/PoomsaePro.db
 output.txt
+PoomsaeProConnector/__pycache__/utils.cpython-312.pyc

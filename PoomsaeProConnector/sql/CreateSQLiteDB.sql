@@ -1,16 +1,16 @@
 --DROP TABLE need one for each table to reset database
-DROP TABLE IF EXISTS Events;
-DROP TABLE IF EXISTS CompMethod;
-DROP TABLE IF EXISTS GenderTbl;
+DROP TABLE IF EXISTS Events; --Does not exist in Poomsae Pro
 DROP TABLE IF EXISTS BCategory;
 DROP TABLE IF EXISTS BDivisionNames;
 DROP TABLE IF EXISTS BreakingScores;
 DROP TABLE IF EXISTS BreakingSettings;
 DROP TABLE IF EXISTS CategoryTbl;
 DROP TABLE IF EXISTS Color;
+DROP TABLE IF EXISTS CompMethod;
 DROP TABLE IF EXISTS Competitors;
 DROP TABLE IF EXISTS DivisionNames;
 DROP TABLE IF EXISTS Event_Info;
+DROP TABLE IF EXISTS GenderTbl;
 DROP TABLE IF EXISTS IndPoomsaeScores;
 DROP TABLE IF EXISTS IndPoomsaeScoresDetails;
 DROP TABLE IF EXISTS IndTotalScores;
@@ -21,6 +21,7 @@ DROP TABLE IF EXISTS Rank;
 DROP TABLE IF EXISTS RoundTbl;
 DROP TABLE IF EXISTS Schools;
 DROP TABLE IF EXISTS ScoreDetails;
+DROP TABLE IF EXISTS SEMatchList; --New for Combo V3c database
 DROP TABLE IF EXISTS SportSettings;
 DROP TABLE IF EXISTS TTDivisionNames;
 DROP TABLE IF EXISTS TTRound;
@@ -789,12 +790,29 @@ CREATE TABLE IF NOT EXISTS Schools
     PRIMARY KEY (DatabaseID, Performance_ID)
 ) WITHOUT ROWID */
 
+--Single Elimination Match List
+--New in V3c database
+CREATE TABLE IF NOT EXISTS SEMatchList
+ (
+    DatabaseID INTEGER NOT NULL,
+	ID Integer NOT NULL, 
+	MatchNo Text NOT NULL, 
+	Gender Integer NOT NULL, 
+	Division Integer NOT NULL, 
+	Category Integer NOT NULL, 
+	Round Integer NOT NULL, 
+	MatchRef Integer NOT NULL,
+	Complete Boolean,
+    PRIMARY KEY (DatabaseID, ID)
+) WITHOUT ROWID;
+
 --SportSettings
 CREATE TABLE IF NOT EXISTS SportSettings
  (
     DatabaseID INTEGER NOT NULL,
 	ID Integer, 
 	Active Boolean NOT NULL, 
+	Rev Text, --New in V3c
 	ProfileName Text, 
 	MaxPoomsaeTIme Integer NOT NULL, 
 	PerformanceTIme Integer, 

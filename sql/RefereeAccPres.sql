@@ -8,7 +8,7 @@ SELECT
     P.RingNbr,
     P.Performance_ID,
     REF.RefereeName,
-    'Poomsae A' as Poomsae,
+    P.FormName_A as Poomsae,
     (CASE REF.Position
         WHEN 'R' THEN P.Acc_R_A
         WHEN 'J1' THEN P.Acc_J1_A
@@ -60,7 +60,7 @@ SELECT
     P.RingNbr,
     P.Performance_ID,
     REF.RefereeName,
-    'Poomsae B' as Poomsae,
+    P.FormName_B as Poomsae,
     (CASE REF.Position
         WHEN 'R' THEN P.Acc_R_T
         WHEN 'J1' THEN P.Acc_J1_B
@@ -112,7 +112,7 @@ SELECT
     P.RingNbr,
     P.Performance_ID,
     REF.RefereeName,
-    'Poomsae B' as Poomsae,
+    P.FormName_T as Poomsae,
     (CASE REF.Position
         WHEN 'R' THEN P.Acc_R_T
         WHEN 'J1' THEN P.Acc_J1_T
@@ -154,7 +154,7 @@ WHERE
     AND REF.Round = RND.Round AND REF.RingNbr = P.RingNbr
     AND P.Acc_R_T <> -1
 UNION
---Poomsae A for non-Team Trials
+--Poomsae A for Team Trials
 SELECT 
     E.EventName,
     D.Division,
@@ -164,7 +164,7 @@ SELECT
     P.RingNbr,
     P.Performance_ID,
     REF.RefereeName,
-    'Poomsae A' as Poomsae,
+    P.FormName_A as Poomsae,
     (CASE REF.Position
         WHEN 'R' THEN P.Acc_R_A
         WHEN 'J1' THEN P.Acc_J1_A
@@ -206,7 +206,7 @@ WHERE
     AND REF.Round = RND.Round AND REF.RingNbr = P.RingNbr
     AND P.Acc_R_A <> -1
 UNION
---Poomsae T for non-Team Trials
+--Poomsae T for Team Trials
 SELECT 
     E.EventName,
     D.Division,
@@ -216,7 +216,7 @@ SELECT
     P.RingNbr,
     P.Performance_ID,
     REF.RefereeName,
-    'Poomsae B' as Poomsae,
+    P.FormName_T as Poomsae,
     (CASE REF.Position
         WHEN 'R' THEN P.Acc_R_T
         WHEN 'J1' THEN P.Acc_J1_T

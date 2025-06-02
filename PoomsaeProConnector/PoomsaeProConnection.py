@@ -3,7 +3,34 @@
 import pyodbc
 import json
 import sqlite3
+import pandas as pd
 from datetime import date
+
+def formatPP_ScoresV2c(data, DatabaseID, tablename):
+    #format data to match current tables
+    #generall formatting
+    #adds the DatabaseID for data consistenty
+    datawid = [(DatabaseID,) + tuple(row) for row in data]
+    #remove the NONE values and Python doesn't like them
+    datawid = [tuple('None' if x is None else x for x in t) for t in datawid]
+    #update all datetime functions
+    datawid = [tuple(item.strftime('%Y-%m-%d') if isinstance(item, date) else item for item in t) for t in datawid]
+
+    #need code to fix the single elimination round of 4 pairing.
+
+    #code to account for added field in V3c on SportSettings
+    if database['databasename'] == 'PP_ScoresV2c.accdb' and tablename == 'SportSettings':
+        df = pd.DataFrame(datawid)
+        df.insert(loc=4, column='Rev',value='PP_V2c')
+        datawid = [tuple(row) for row in df.to_numpy()]
+
+    #update data to match column count
+    curdatabase.execute(f"PRAGMA table_info("+tablename+")")
+    columns = curdatabase.fetchall()
+    column_count = len(columns)
+    datawid = [tuple(list(t) + [0] * (column_count - len(t))) for t in datawid]
+    #inserts into the master database
+    return datawid
 
 def extractPP_ScoresV2c(DatabaseID, database):
     try:
@@ -30,18 +57,7 @@ def extractPP_ScoresV2c(DatabaseID, database):
                 cureventdata.execute(sql)
                 data = cureventdata.fetchall()
                 if len(data)>0:
-                    #adds the DatabaseID for data consistenty
-                    datawid = [(DatabaseID,) + tuple(row) for row in data]
-                    #remove the NONE values and Python doesn't like them
-                    datawid = [tuple('None' if x is None else x for x in t) for t in datawid]
-                    #update all datetime functions
-                    datawid = [tuple(item.strftime('%Y-%m-%d') if isinstance(item, date) else item for item in t) for t in datawid]
-                    #update data to match column count
-                    curdatabase.execute(f"PRAGMA table_info("+tablename+")")
-                    columns = curdatabase.fetchall()
-                    column_count = len(columns)
-                    datawid = [tuple(list(t) + [0] * (column_count - len(t))) for t in datawid]
-                    #inserts into the master database
+                    datawid = formatPP_ScoresV2c(data, DatabaseID, tablename)
                     sql = 'INSERT INTO ' + tablename + ' VALUES ' + str(datawid).strip('[]')                    
                     curdatabase.execute(sql)
 
@@ -56,7 +72,7 @@ def extractPP_ScoresV2c(DatabaseID, database):
 #Needed because the MDBTools can only do single table selects on Linux
 connmain = sqlite3.connect('PoomsaeProConnector/PoomsaePro.db')
 #create DB in memory for testing
-#database = sqlite3.connect(':memory:')
+#connmain = sqlite3.connect(':memory:')
 curdatabase = connmain.cursor()
 
 #build the database
@@ -92,13 +108,27 @@ for event in events:
         #code below is for PP_ScoresV2c.accdb
 
         #Connect to MS Access Database
+        print(event['event'])
         match database['databasename']:
-            case 'PP_ScoresV2c.accdb':
+            case 'PP_ScoresV1b.accdb': #Breaking
+                print(database['databasename']+' code not created')
+            case 'PP_ScoresV2F.accdb': #Freestyle
+                print(database['databasename']+' code not created')
+            case 'PP_ScoresV3a.accdb': #Recognized
+                print(database['databasename']+' code not created')
+            case 'PP_ScoresV4a.accdb': #Recognized
+                print(database['databasename']+' code not created')
+            case 'PP_ScoresV3t.accdb': #Team Trials
+                print(database['databasename']+' code not created')
+            case 'PP_ScoresV4t.accdb': #Team Trials
+                print(database['databasename']+' code not created')
+            case 'PP_ScoresV1c.accdb': #Combo
+                print(database['databasename']+' code not created')
+            case 'PP_ScoresV2c.accdb': #Combo
                 extractPP_ScoresV2c(DatabaseID, database)
-            case 'PP_ScoresV1c.accdb':
-                print('PP_ScoresV1c.accdb code not created')
-            case 'PP_ScoresV4t.accdb':
-                print('PP_ScoresV4t.accdb code not created')
+            case 'PP_ScoresV3c.accdb': #Combo for Simultaneous
+                #V2c and V3c only differ by the SEMatchList table
+                extractPP_ScoresV2c(DatabaseID, database)
             case _:
                 print(database['databasename']+' unknown database type.')
         

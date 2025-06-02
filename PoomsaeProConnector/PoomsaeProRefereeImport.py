@@ -1,6 +1,9 @@
 import json
 import sqlite3
 import pandas as pd
+from pathlib import Path
+
+from utils import worksheet_exists
 
 def CreateRefereeAssignment (row, refereedata, event):
     #usually only 5 judges
@@ -10,7 +13,10 @@ def CreateRefereeAssignment (row, refereedata, event):
         if (row == p).any():
             # Get the Series name if the value is found
             referee = row[row == p].index[0]  # Returns 'b'
-            refereeassignment = (event,row['Division'],row['Gender'],row['Category'],row['Round'],row['RingNbr'],'N/A',p,referee)
+            if 'MatchNo' in row.index:
+                refereeassignment = (event,row['Division'],row['Gender'],row['Category'],row['Round'],row['RingNbr'],row['MatchNo'],p,referee)
+            else:
+                refereeassignment = (event,row['Division'],row['Gender'],row['Category'],row['Round'],row['RingNbr'],'N/A',p,referee)
             refereedata.append(refereeassignment)
 
 #connect to the database
@@ -35,13 +41,15 @@ for event in events:
     #note this adds the referee data independent of if the event is in the database
     refereedata = []
     #import as dataframe
-    df = pd.read_excel(event['path']+'/'+event['refereedata'], sheet_name='Ring Assignments')
-    #flatten to same form as database
-    for index,row in df.iterrows():
-        CreateRefereeAssignment (row, refereedata, event['event'])
-    #insert into database
-    sql = 'INSERT INTO RefereeAssignment VALUES ' + str(refereedata).strip('[]')                    
-    curdatabase.execute(sql)
+    excelfilepath = event['path']+'/'+event['refereedata']
+    if worksheet_exists(excelfilepath, 'Ring Assignments'):
+        df = pd.read_excel(event['path']+'/'+event['refereedata'], sheet_name='Ring Assignments')
+        #flatten to same form as database
+        for index,row in df.iterrows():
+            CreateRefereeAssignment (row, refereedata, event['event'])
+        #insert into database
+        sql = 'INSERT INTO RefereeAssignment VALUES ' + str(refereedata).strip('[]')                    
+        curdatabase.execute(sql)
 
 conn.commit()
 curdatabase.close()
