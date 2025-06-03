@@ -24,6 +24,7 @@ FROM
         AND S.Category = P.Category
         AND S.Round = P.RoundName
         --AND S.Complete = TRUE
+        --Missing Ring Number join which causes duplication
 WHERE
     P.Acc_R_A <> -1
     AND E.EventName = :eventname

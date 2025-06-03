@@ -11,12 +11,13 @@ def CreateRefereeAssignment (row, refereedata, event):
     for p in position:
         # Check if the value exists in any tuple in the Series
         if (row == p).any():
-            # Get the Series name if the value is found
-            referee = row[row == p].index[0]  # Returns 'b'
+            #Get the column name to find the referee name
+            referee = row[row == p].index[0]  
+            #statement for V3c databases with Match Numbers
             if 'MatchNo' in row.index:
                 refereeassignment = (event,row['Division'],row['Gender'],row['Category'],row['Round'],row['RingNbr'],row['MatchNo'],p,referee)
             else:
-                refereeassignment = (event,row['Division'],row['Gender'],row['Category'],row['Round'],row['RingNbr'],'N/A',p,referee)
+                refereeassignment = (event,row['Division'],row['Gender'],row['Category'],row['Round'],row['RingNbr'],'',p,referee)
             refereedata.append(refereeassignment)
 
 #connect to the database
@@ -43,13 +44,16 @@ for event in events:
     #import as dataframe
     excelfilepath = event['path']+'/'+event['refereedata']
     if worksheet_exists(excelfilepath, 'Ring Assignments'):
-        df = pd.read_excel(event['path']+'/'+event['refereedata'], sheet_name='Ring Assignments')
+        df = pd.read_excel(event['path']+'/'+event['refereedata'], sheet_name='Ring Assignments', dtype={'MatchNo': str}, na_filter=False)
         #flatten to same form as database
         for index,row in df.iterrows():
             CreateRefereeAssignment (row, refereedata, event['event'])
         #insert into database
-        sql = 'INSERT INTO RefereeAssignment VALUES ' + str(refereedata).strip('[]')                    
-        curdatabase.execute(sql)
+        if not refereedata:
+            print('No data for '+event['event'])
+        else:
+            sql = 'INSERT INTO RefereeAssignment VALUES ' + str(refereedata).strip('[]')     
+            curdatabase.execute(sql)
 
 conn.commit()
 curdatabase.close()
