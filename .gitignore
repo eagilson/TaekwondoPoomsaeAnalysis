@@ -1,6 +1,7 @@
 # Data directory must be ignored
 /data
 /.vscode
+/__pycache__
+PoomsaeProConnector/__pycache__
 PoomsaeProConnector/PoomsaePro.db
 output.txt
-PoomsaeProConnector/__pycache__
