@@ -6,8 +6,8 @@ from dash.dependencies import Input, Output
 from utils import categorize_event, load_data
 
 # Create table data
-def create_table_data(db_path, sql, competition='All', event='All', referee='All'):
-    df = load_data(db_path, sql)
+def create_table_data(db_path, sql_file_path, competition='All', event='All', referee='All'):
+    df = load_data(db_path, sql_file_path)
     if df is None:
         return pd.DataFrame(), "Error: Failed to load data."
 
@@ -39,14 +39,12 @@ def create_table_data(db_path, sql, competition='All', event='All', referee='All
 
     return filtered_df, None
 
-# Load SQL query
-with open('sql/RefereeAccPres.sql', 'r') as file:
-    sql = file.read()
 
-poomsaeprodb = 'PoomsaeProConnector/PoomsaePro.db'
+db_path = 'PoomsaeProConnector/PoomsaePro.db'
+sql_file_path = 'sql/RefereeAccPres.sql'
 
 # Load initial data for dropdown options
-df = load_data(poomsaeprodb, sql)
+df = load_data(db_path, sql_file_path)
 event_names = ['All'] + sorted(df['EventName'].unique()) if df is not None else ['All']
 referee_names = ['All'] + sorted(df['RefereeName'].unique()) if df is not None else ['All']
 
@@ -119,7 +117,7 @@ def update_referees(competition):
      Input('referee-select', 'value')]
 )
 def update_table(competition, event, referee):
-    filtered_df, error = create_table_data(poomsaeprodb, sql, competition, event, referee)
+    filtered_df, error = create_table_data(db_path, sql_file_path, competition, event, referee)
     
     if error:
         return [], [], error

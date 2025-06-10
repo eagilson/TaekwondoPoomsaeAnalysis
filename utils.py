@@ -1,3 +1,30 @@
+# Load data from SQLite
+def load_data(db_path, sql_file_path):
+    import sqlite3
+    from pathlib import Path
+    import pandas as pd
+
+    if not Path(db_path).exists():
+        print(f"Error: Database '{db_path}' not found.")
+        return None
+    if not Path(sql_file_path).exists():
+        print(f"Error: SQL file '{sql_file_path}' not found.")
+        return None
+    try:
+        with open(sql_file_path, 'r') as file:
+            sql_query = file.read()
+        conn = sqlite3.connect(db_path)
+        df = pd.read_sql_query(sql_query, conn)
+        conn.close()
+        return df
+    except sqlite3.Error as e:
+        print(f"Database error: {e}")
+        return None
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return None
+
+
 # Categorize event
 def categorize_event(event):
     match event.lower():
@@ -11,27 +38,6 @@ def categorize_event(event):
             return 'Mixed'
         case _:
             return 'Recognized'
-
-# Load data from SQLite
-def load_data(db_path, sql):
-    import sqlite3
-    from pathlib import Path
-    import pandas as pd
-
-    try:
-        if not Path(db_path).exists():
-            print(f"Error: Database '{db_path}' not found.")
-            return None
-        conn = sqlite3.connect(db_path)
-        df = pd.read_sql_query(sql, conn)
-        conn.close()
-        return df
-    except sqlite3.Error as e:
-        print(f"Database error: {e}")
-        return None
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
-        return None
     
 def categorize_division(division):
     """

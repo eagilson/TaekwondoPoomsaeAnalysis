@@ -6,12 +6,11 @@ from dash.dependencies import Input, Output
 import plotly.express as px
 from utils import load_data, categorize_division
 
-# Load data
-with open('sql/RoundWinner.sql', 'r') as file:
-    sql = file.read()
+db_path = 'PoomsaeProConnector/PoomsaePro.db'
+sql_file_path = 'sql/RoundWinner.sql'
 
-poomsaeprodb = 'PoomsaeProConnector/PoomsaePro.db'
-df = load_data(poomsaeprodb, sql)
+# Load initial data for dropdown options
+df = load_data(db_path, sql_file_path)
 
 # Data cleaning
 df = df.dropna(subset=['Winner', 'Simultaneous', 'Division', 'EventName'])
