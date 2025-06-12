@@ -6,24 +6,14 @@ from dash.dependencies import Input, Output
 from utils import categorize_event, load_data
 
 # Create table data
-def create_table_data(db_path, sql_file_path, competition='All', event='All', referee='All'):
-    df = load_data(db_path, sql_file_path)
-    if df is None:
-        return pd.DataFrame(), "Error: Failed to load data."
-
-    # Categorize Division
-    df['Division_category'] = df['Division'].apply(categorize_event)
-    
-    # Calculate differences
-    df['AccDifference'] = df['Accuracy'] - df['TotalAccuracy']
-    df['PresDifference'] = df['Presentation'] - df['TotalPresentation']
+def create_table_data(df, competition='All', event='All', referee='All'):
 
     # Event filter before grouping
-    df = df if event == 'All' else df[df['Division_category'] == event]
+    dffiltered = df if event == 'All' else df[df['Division_category'] == event]
 
     # Generate summary statistics grouped by name
     group_by = ['EventName', 'Division', 'Gender', 'Category', 'Round', 'RefereeName']
-    stats = df.groupby(group_by).agg({
+    stats = dffiltered.groupby(group_by).agg({
         'RingNbr': 'count',
         'AccDifference': ['mean', 'std'],
         'PresDifference': ['mean', 'std']
@@ -45,6 +35,15 @@ sql_file_path = 'sql/RefereeAccPres.sql'
 
 # Load initial data for dropdown options
 df = load_data(db_path, sql_file_path)
+
+# Categorize Division
+df['Division_category'] = df['Division'].apply(categorize_event)
+
+# Calculate differences
+df['AccDifference'] = df['Accuracy'] - df['TotalAccuracy']
+df['PresDifference'] = df['Presentation'] - df['TotalPresentation']
+
+
 event_names = ['All'] + sorted(df['EventName'].unique()) if df is not None else ['All']
 referee_names = ['All'] + sorted(df['RefereeName'].unique()) if df is not None else ['All']
 
@@ -117,7 +116,7 @@ def update_referees(competition):
      Input('referee-select', 'value')]
 )
 def update_table(competition, event, referee):
-    filtered_df, error = create_table_data(db_path, sql_file_path, competition, event, referee)
+    filtered_df, error = create_table_data(df, competition, event, referee)
     
     if error:
         return [], [], error

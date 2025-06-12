@@ -4,6 +4,7 @@ import dash
 from dash import html, dcc, Input, Output
 import plotly.express as px
 from utils import categorize_event, load_data, categorize_division
+from scipy.stats import norm
 
 # Compute referee ratings with tiebreakers
 def compute_referee_ratings(row_a, row_b, referee):
@@ -123,24 +124,10 @@ def interpret_kappa(kappa):
     else:
         return "Almost perfect agreement: Near-unanimous ratings, suggesting highly consistent referee judgments due to clear criteria and training."
 
-# Load data
-db_path = 'PoomsaeProConnector/PoomsaePro.db'
-sql_file_path = 'sql/RefereeScoresSingleElimination.sql'
-df = load_data(db_path, sql_file_path)
-if df is None:
-    raise Exception("Failed to load data")
-
-# Add categorizations
-df['EventCategory'] = df['EventName'].apply(categorize_event)
-df['DivisionCategory'] = df['Division'].apply(categorize_division)
-
-# Process data
-paired_df = pair_athletes(df)
-
-# Calculate metrics
+# Calculate metrics, including z-score and p-value
 def calculate_metrics(df_subset):
     if df_subset.empty:
-        return None, None, None, "No data available for selected events or divisions."
+        return None, None, None, None, None, "No data available for selected events or divisions."
     
     # Three categories: 0 (Hong), 1 (Chung), 2 (Tie)
     fleiss_data = [[sum(row[['referee1', 'referee2', 'referee3', 'referee4', 'referee5']] == 0),
@@ -150,7 +137,7 @@ def calculate_metrics(df_subset):
     try:
         kappa = ir.fleiss_kappa(fleiss_data)
     except:
-        return None, None, None, "Cannot compute Kappa: insufficient or uniform ratings."
+        return None, None, None, None, None, "Cannot compute Kappa: insufficient or uniform ratings."
     
     n_pairs = len(df_subset)
     n_referees = 5
@@ -169,11 +156,36 @@ def calculate_metrics(df_subset):
     p1 = total_1s / total_ratings
     p2 = total_2s / total_ratings
     P_e = p0**2 + p1**2 + p2**2
+    
+    # Calculate standard error
+    p_j = [p0, p1, p2]
+    se_numerator = P_bar + P_e - 2 * sum(p_j[j] * p_j[j] * P_bar for j in range(3)) - P_e**2
+    se_denominator = (1 - P_e)**2 * n_referees * n_pairs
+    se_kappa = (se_numerator / se_denominator)**0.5 if se_denominator != 0 else float('inf')
+    
+    # Calculate z-score and p-value
+    z_score = kappa / se_kappa if se_kappa != 0 else float('inf')
+    p_value = 2 * (1 - norm.cdf(abs(z_score))) if z_score != float('inf') else 0.0
+    
     kappa_interpretation = interpret_kappa(kappa)
-    return kappa, P_bar, P_e, kappa_interpretation
+    return kappa, P_bar, P_e, z_score, p_value, kappa_interpretation
+
+# Load data
+db_path = 'PoomsaeProConnector/PoomsaePro.db'
+sql_file_path = 'sql/RefereeScoresSingleElimination.sql'
+df = load_data(db_path, sql_file_path)
+if df is None:
+    raise Exception("Failed to load data")
+
+# Add categorizations
+df['EventCategory'] = df['EventName'].apply(categorize_event)
+df['DivisionCategory'] = df['Division'].apply(categorize_division)
+
+# Process data
+paired_df = pair_athletes(df)
 
 # Initial metrics
-kappa, P_bar, P_e, kappa_interpretation = calculate_metrics(paired_df)
+kappa, P_bar, P_e, z_score, p_value, kappa_interpretation = calculate_metrics(paired_df)
 
 # Dash Dashboard
 app = dash.Dash(__name__)
@@ -204,6 +216,8 @@ app.layout = html.Div([
     html.H4(id='kappa-interpretation', children=f"Interpretation: {kappa_interpretation}"),
     html.H4(id='observed-agreement', children=f"Observed Agreement: {P_bar:.3f}" if P_bar is not None else "Observed Agreement: N/A"),
     html.H4(id='expected-agreement', children=f"Expected Agreement: {P_e:.3f}" if P_e is not None else "Expected Agreement: N/A"),
+    html.H4(id='z-score', children=f"Z-Score: {z_score:.3f}" if z_score is not None and z_score != float('inf') else "Z-Score: N/A"),
+    html.H4(id='p-value', children=f"P-Value: {p_value:.4f}" if p_value is not None else "P-Value: N/A"),
     html.P("The chart below compares observed and expected agreement among referees for Chung vs. Hong ratings, including ties."),
     dcc.Graph(id='agreement-chart')
 ])
@@ -214,6 +228,8 @@ app.layout = html.Div([
      Output('kappa-interpretation', 'children'),
      Output('observed-agreement', 'children'),
      Output('expected-agreement', 'children'),
+     Output('z-score', 'children'),
+     Output('p-value', 'children'),
      Output('agreement-chart', 'figure')],
     [Input('event-filter', 'value'),
      Input('division-filter', 'value')]
@@ -225,7 +241,7 @@ def update_dashboard(selected_events, selected_divisions):
     if selected_divisions:
         df_subset = df_subset[df_subset['DivisionCategory'].isin(selected_divisions)]
     
-    kappa, P_bar, P_e, kappa_interpretation = calculate_metrics(df_subset)
+    kappa, P_bar, P_e, z_score, p_value, kappa_interpretation = calculate_metrics(df_subset)
     
     chart_data = pd.DataFrame({
         'Metric': ['Observed Agreement', 'Expected Agreement'],
@@ -241,6 +257,8 @@ def update_dashboard(selected_events, selected_divisions):
         f"Interpretation: {kappa_interpretation}",
         f"Observed Agreement: {P_bar:.3f}" if P_bar is not None else "Observed Agreement: N/A",
         f"Expected Agreement: {P_e:.3f}" if P_e is not None else "Expected Agreement: N/A",
+        f"Z-Score: {z_score:.3f}" if z_score is not None and z_score != float('inf') else "Z-Score: N/A",
+        f"P-Value: {p_value:.4f}" if p_value is not None else "P-Value: N/A",
         fig
     )
 

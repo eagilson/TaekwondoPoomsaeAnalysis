@@ -60,7 +60,7 @@ WHERE
     AND REF.Gender = G.Gender AND REF.Category = C.Category 
     AND REF.Round = RND.Round AND REF.RingNbr = P.RingNbr
     AND P.Acc_R_A <> -1
-	AND (REF.MatchNumber = 0
+	AND (REF.MatchNumber <= 0
 		OR (REF.MatchNumber > 0
 			AND REF.MatchNumber = SE.MatchNo
 			)
@@ -128,7 +128,7 @@ WHERE
     AND REF.Gender = G.Gender AND REF.Category = C.Category 
     AND REF.Round = RND.Round AND REF.RingNbr = P.RingNbr
     AND P.Acc_R_B <> -1
-	AND (REF.MatchNumber = 0
+	AND (REF.MatchNumber <= 0
 		OR (REF.MatchNumber > 0
 			AND REF.MatchNumber = SE.MatchNo
 			)
@@ -196,7 +196,7 @@ WHERE
     AND REF.Gender = G.Gender AND REF.Category = C.Category 
     AND REF.Round = RND.Round AND REF.RingNbr = P.RingNbr
     AND P.Acc_R_T <> -1
-	AND (REF.MatchNumber = 0
+	AND (REF.MatchNumber <= 0
 		OR (REF.MatchNumber > 0
 			AND REF.MatchNumber = SE.MatchNo
 			)
