@@ -7,6 +7,7 @@ SELECT
     RND.Round,
     P.RingNbr,
     P.Performance_ID,
+	SE.MatchNo,
     REF.RefereeName,
     P.FormName_A as Poomsae,
     (CASE REF.Position
@@ -33,12 +34,22 @@ SELECT
     P.Pre_Avg_A as TotalPresentation
 FROM
     Events E,
-    PoomsaeScores P,
     GenderTbl G,
     DivisionNames D,
     CategoryTbl C,
     RoundTbl RND,
-    RefereeAssignment REF
+    RefereeAssignment REF,
+	PoomsaeScores P
+	LEFT OUTER JOIN SEMatchList SE
+		ON SE.Gender = P.Gender
+			AND SE.Division = P.Division
+			AND P.Category = SE.Category
+			AND SE.Round = P.RoundName
+			AND (SE.MatchRef = P.OrderOfPerform
+				OR (SE.MatchRef = POWER(2,7-(P.RoundName)-9) + 1 - P.OrderOfPerform
+					AND POWER(2,7-(P.RoundName)-9) + 1 - P.OrderOfPerform < P.OrderOfPerform
+					)
+				)
 WHERE
     E.DatabaseID = P.DatabaseID
     AND G.DatabaseID = E.DatabaseID AND G.Gender_ID = P.Gender
@@ -49,6 +60,11 @@ WHERE
     AND REF.Gender = G.Gender AND REF.Category = C.Category 
     AND REF.Round = RND.Round AND REF.RingNbr = P.RingNbr
     AND P.Acc_R_A <> -1
+	AND (REF.MatchNumber = 0
+		OR (REF.MatchNumber > 0
+			AND REF.MatchNumber = SE.MatchNo
+			)
+		)
 UNION
 --Poomsae B for non-Team Trials
 SELECT 
@@ -59,10 +75,11 @@ SELECT
     RND.Round,
     P.RingNbr,
     P.Performance_ID,
+	SE.MatchNo,
     REF.RefereeName,
     P.FormName_B as Poomsae,
     (CASE REF.Position
-        WHEN 'R' THEN P.Acc_R_T
+        WHEN 'R' THEN P.Acc_R_B
         WHEN 'J1' THEN P.Acc_J1_B
         WHEN 'J2' THEN P.Acc_J1_B
         WHEN 'J3' THEN P.Acc_J1_B
@@ -85,12 +102,22 @@ SELECT
     P.Pre_Avg_B as TotalPresentation
 FROM
     Events E,
-    PoomsaeScores P,
     GenderTbl G,
     DivisionNames D,
     CategoryTbl C,
     RoundTbl RND,
-    RefereeAssignment REF
+    RefereeAssignment REF,
+	PoomsaeScores P
+	LEFT OUTER JOIN SEMatchList SE
+		ON SE.Gender = P.Gender
+			AND SE.Division = P.Division
+			AND P.Category = SE.Category
+			AND SE.Round = P.RoundName
+			AND (SE.MatchRef = P.OrderOfPerform
+				OR (SE.MatchRef = POWER(2,7-(P.RoundName)-9) + 1 - P.OrderOfPerform
+					AND POWER(2,7-(P.RoundName)-9) + 1 - P.OrderOfPerform < P.OrderOfPerform
+					)
+				)
 WHERE
     E.DatabaseID = P.DatabaseID
     AND G.DatabaseID = E.DatabaseID AND G.Gender_ID = P.Gender
@@ -101,6 +128,11 @@ WHERE
     AND REF.Gender = G.Gender AND REF.Category = C.Category 
     AND REF.Round = RND.Round AND REF.RingNbr = P.RingNbr
     AND P.Acc_R_B <> -1
+	AND (REF.MatchNumber = 0
+		OR (REF.MatchNumber > 0
+			AND REF.MatchNumber = SE.MatchNo
+			)
+		)
 UNION
 --Poomsae T for non-Team Trials
 SELECT 
@@ -111,6 +143,7 @@ SELECT
     RND.Round,
     P.RingNbr,
     P.Performance_ID,
+	SE.MatchNo,
     REF.RefereeName,
     P.FormName_T as Poomsae,
     (CASE REF.Position
@@ -137,12 +170,22 @@ SELECT
     P.Pre_Avg_T as TotalPresentation
 FROM
     Events E,
-    PoomsaeScores P,
     GenderTbl G,
     DivisionNames D,
     CategoryTbl C,
     RoundTbl RND,
-    RefereeAssignment REF
+    RefereeAssignment REF,
+	PoomsaeScores P
+	LEFT OUTER JOIN SEMatchList SE
+		ON SE.Gender = P.Gender
+			AND SE.Division = P.Division
+			AND P.Category = SE.Category
+			AND SE.Round = P.RoundName
+			AND (SE.MatchRef = P.OrderOfPerform
+				OR (SE.MatchRef = POWER(2,7-(P.RoundName)-9) + 1 - P.OrderOfPerform
+					AND POWER(2,7-(P.RoundName)-9) + 1 - P.OrderOfPerform < P.OrderOfPerform
+					)
+				)
 WHERE
     E.DatabaseID = P.DatabaseID
     AND G.DatabaseID = E.DatabaseID AND G.Gender_ID = P.Gender
@@ -153,6 +196,11 @@ WHERE
     AND REF.Gender = G.Gender AND REF.Category = C.Category 
     AND REF.Round = RND.Round AND REF.RingNbr = P.RingNbr
     AND P.Acc_R_T <> -1
+	AND (REF.MatchNumber = 0
+		OR (REF.MatchNumber > 0
+			AND REF.MatchNumber = SE.MatchNo
+			)
+		)
 UNION
 --Poomsae A for Team Trials
 SELECT 
@@ -163,6 +211,7 @@ SELECT
     RND.Round,
     P.RingNbr,
     P.Performance_ID,
+    '',
     REF.RefereeName,
     P.FormName_A as Poomsae,
     (CASE REF.Position
@@ -215,6 +264,7 @@ SELECT
     RND.Round,
     P.RingNbr,
     P.Performance_ID,
+    '',
     REF.RefereeName,
     P.FormName_T as Poomsae,
     (CASE REF.Position

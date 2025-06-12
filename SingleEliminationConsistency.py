@@ -1,10 +1,8 @@
 import pandas as pd
-import sqlite3
 import statsmodels.stats.inter_rater as ir
 import dash
 from dash import html, dcc, Input, Output
 import plotly.express as px
-from pathlib import Path
 from utils import categorize_event, load_data, categorize_division
 
 # Compute referee ratings with tiebreakers
@@ -32,14 +30,14 @@ def compute_referee_ratings(row_a, row_b, referee):
             return 0
     return 2  # Tie
 
-# Compute final result with tiebreakers
+# Compute final result with tiebreakers (no ties allowed)
 def compute_final_result(row_a, row_b):
     score_a = row_a['Form_Score_AB']
     score_b = row_b['Form_Score_AB']
     if score_a > score_b:
-        return 1
+        return 1  # Chung (A)
     elif score_a < score_b:
-        return 0
+        return 0  # Hong (B)
     # Tiebreaker 1: Presentation_Total
     pres_a = row_a['Presentation_Total']
     pres_b = row_b['Presentation_Total']
@@ -54,7 +52,7 @@ def compute_final_result(row_a, row_b):
         return 1
     elif full_a < full_b:
         return 0
-    # Tiebreaker 4: Tiebreaker form (if contested)
+    # Tiebreaker 3: Tiebreaker form (if contested)
     if row_a['TieBreaker_Score'] > -1:
         tie_a = row_a['Acc_Avg_T'] + row_a['Pre_Avg_T']
         tie_b = row_b['Acc_Avg_T'] + row_b['Pre_Avg_T']
@@ -62,16 +60,16 @@ def compute_final_result(row_a, row_b):
             return 1
         elif tie_a < tie_b:
             return 0
-    # Tiebreaker 3: TieBreaker_Total
+    # Tiebreaker 4: TieBreaker_Total
     tie_total_a = row_a['TieBreaker_Total']
     tie_total_b = row_b['TieBreaker_Total']
     if tie_total_a > tie_total_b:
         return 1
     elif tie_total_a < tie_total_b:
         return 0
-    return 0  # Default for unresolved ties
+    return 0  # Default to Hong (B) for unresolved cases, as ties are not allowed
 
-# Pair athletes
+# Pair athletes, assigning Chung to odd OrderOfPerform
 def pair_athletes(df):
     paired_data = []
     for round_id in df['Round_ID'].unique():
@@ -83,19 +81,24 @@ def pair_athletes(df):
             row_a = round_df.iloc[i]
             row_b = round_df.iloc[len(round_df) - 1 - i]
             if row_a['OrderOfPerform'] + row_b['OrderOfPerform'] == target_sum:
-                ratings = pd.Series([compute_referee_ratings(row_a, row_b, ref) for ref in ['R', 'J1', 'J2', 'J3', 'J4']],
+                # Assign Chung (A) to the athlete with odd OrderOfPerform
+                if row_a['OrderOfPerform'] % 2 == 1:
+                    chung_row, hong_row = row_a, row_b
+                else:
+                    chung_row, hong_row = row_b, row_a
+                ratings = pd.Series([compute_referee_ratings(chung_row, hong_row, ref) for ref in ['R', 'J1', 'J2', 'J3', 'J4']],
                                    index=['referee1', 'referee2', 'referee3', 'referee4', 'referee5'])
-                final_result = compute_final_result(row_a, row_b)
+                final_result = compute_final_result(chung_row, hong_row)
                 paired_data.append({
-                    'EventName': row_a['EventName'],
-                    'Division': row_a['Division'],
-                    'DivisionCategory': row_a['DivisionCategory'],
+                    'EventName': chung_row['EventName'],
+                    'Division': chung_row['Division'],
+                    'DivisionCategory': chung_row['DivisionCategory'],
                     'Round_ID': round_id,
                     'Round_Name': f"Round of {round_size}",
-                    'OrderOfPerform_A': row_a['OrderOfPerform'],
-                    'OrderOfPerform_B': row_b['OrderOfPerform'],
-                    'Competitor_A': row_a['CompetitorNbr'],
-                    'Competitor_B': row_b['CompetitorNbr'],
+                    'OrderOfPerform_A': chung_row['OrderOfPerform'],
+                    'OrderOfPerform_B': hong_row['OrderOfPerform'],
+                    'Competitor_A': chung_row['CompetitorNbr'],
+                    'Competitor_B': hong_row['CompetitorNbr'],
                     'referee1': ratings['referee1'],
                     'referee2': ratings['referee2'],
                     'referee3': ratings['referee3'],
