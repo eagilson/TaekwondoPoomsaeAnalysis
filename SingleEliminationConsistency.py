@@ -70,43 +70,58 @@ def compute_final_result(row_a, row_b):
         return 0
     return 0  # Default to Hong (B) for unresolved cases, as ties are not allowed
 
-# Pair athletes, assigning Chung to odd OrderOfPerform
+# Pair athletes within EventName, Division, Gender, Category, and Round_ID
 def pair_athletes(df):
+    # Verify required columns exist
+    required_columns = ['EventName', 'Division', 'Gender', 'Category', 'Round_ID', 'OrderOfPerform', 'CompetitorNbr']
+    missing_columns = [col for col in required_columns if col not in df.columns]
+    if missing_columns:
+        raise ValueError(f"Missing required columns in input DataFrame: {', '.join(missing_columns)}")
+    
     paired_data = []
-    for round_id in df['Round_ID'].unique():
-        round_size = 2 ** (7 - (round_id - 9))
+    # Iterate over unique combinations of EventName, Division, Gender, Category, and Round_ID
+    for (event_name, division, gender, category, round_id), group_df in df.groupby(['EventName', 'Division', 'Gender', 'Category', 'Round_ID']):
+        round_size = 2 ** (7 - (round_id - 9))  # Maximum number of athletes in the round
         target_sum = round_size + 1
-        round_df = df[df['Round_ID'] == round_id].copy()
-        round_df = round_df.sort_values('OrderOfPerform')
-        for i in range(len(round_df) // 2):
-            row_a = round_df.iloc[i]
-            row_b = round_df.iloc[len(round_df) - 1 - i]
-            if row_a['OrderOfPerform'] + row_b['OrderOfPerform'] == target_sum:
-                # Assign Chung (A) to the athlete with odd OrderOfPerform
-                if row_a['OrderOfPerform'] % 2 == 1:
-                    chung_row, hong_row = row_a, row_b
-                else:
-                    chung_row, hong_row = row_b, row_a
-                ratings = pd.Series([compute_referee_ratings(chung_row, hong_row, ref) for ref in ['R', 'J1', 'J2', 'J3', 'J4']],
-                                   index=['referee1', 'referee2', 'referee3', 'referee4', 'referee5'])
-                final_result = compute_final_result(chung_row, hong_row)
-                paired_data.append({
-                    'EventName': chung_row['EventName'],
-                    'Division': chung_row['Division'],
-                    'DivisionCategory': chung_row['DivisionCategory'],
-                    'Round_ID': round_id,
-                    'Round_Name': f"Round of {round_size}",
-                    'OrderOfPerform_A': chung_row['OrderOfPerform'],
-                    'OrderOfPerform_B': hong_row['OrderOfPerform'],
-                    'Competitor_A': chung_row['CompetitorNbr'],
-                    'Competitor_B': hong_row['CompetitorNbr'],
-                    'referee1': ratings['referee1'],
-                    'referee2': ratings['referee2'],
-                    'referee3': ratings['referee3'],
-                    'referee4': ratings['referee4'],
-                    'referee5': ratings['referee5'],
-                    'Final_Result': final_result
-                })
+        round_df = group_df.sort_values('OrderOfPerform')
+        if len(round_df) > round_size:
+            print(f"Warning: Group {event_name}, {division}, {gender}, {category}, Round_ID {round_id} has {len(round_df)} athletes, exceeding max {round_size}")
+        for _, row_a in round_df.iterrows():
+            order_a = row_a['OrderOfPerform']
+            order_b = target_sum - order_a
+            # Find row_b with OrderOfPerform = target_sum - order_a
+            row_b_candidates = round_df[round_df['OrderOfPerform'] == order_b]
+            if not row_b_candidates.empty:
+                row_b = row_b_candidates.iloc[0]
+                # Skip if row_b is row_a or already paired (order_a < order_b to avoid duplicates)
+                if row_a['CompetitorNbr'] != row_b['CompetitorNbr'] and order_a < order_b:
+                    # Assign Chung (A) to the athlete with odd OrderOfPerform
+                    if row_a['OrderOfPerform'] % 2 == 1:
+                        chung_row, hong_row = row_a, row_b
+                    else:
+                        chung_row, hong_row = row_b, row_a
+                    ratings = pd.Series([compute_referee_ratings(chung_row, hong_row, ref) for ref in ['R', 'J1', 'J2', 'J3', 'J4']],
+                                       index=['referee1', 'referee2', 'referee3', 'referee4', 'referee5'])
+                    final_result = compute_final_result(chung_row, hong_row)
+                    paired_data.append({
+                        'EventName': chung_row['EventName'],
+                        'Division': chung_row['Division'],
+                        'DivisionCategory': chung_row['DivisionCategory'],
+                        'Gender': chung_row['Gender'],
+                        'Category': chung_row['Category'],
+                        'Round_ID': round_id,
+                        'Round_Name': f"Round of {round_size}",
+                        'OrderOfPerform_A': chung_row['OrderOfPerform'],
+                        'OrderOfPerform_B': hong_row['OrderOfPerform'],
+                        'Competitor_A': chung_row['CompetitorNbr'],
+                        'Competitor_B': hong_row['CompetitorNbr'],
+                        'referee1': ratings['referee1'],
+                        'referee2': ratings['referee2'],
+                        'referee3': ratings['referee3'],
+                        'referee4': ratings['referee4'],
+                        'referee5': ratings['referee5'],
+                        'Final_Result': final_result
+                    })
     return pd.DataFrame(paired_data)
 
 # Interpret Fleiss' Kappa
@@ -124,10 +139,10 @@ def interpret_kappa(kappa):
     else:
         return "Almost perfect agreement: Near-unanimous ratings, suggesting highly consistent referee judgments due to clear criteria and training."
 
-# Calculate metrics, including z-score and p-value
+# Calculate metrics, including z-score, p-value, and match outcomes with ties
 def calculate_metrics(df_subset):
     if df_subset.empty:
-        return None, None, None, None, None, "No data available for selected events or divisions."
+        return None, None, None, None, None, None, "No data available for selected events or divisions."
     
     # Three categories: 0 (Hong), 1 (Chung), 2 (Tie)
     fleiss_data = [[sum(row[['referee1', 'referee2', 'referee3', 'referee4', 'referee5']] == 0),
@@ -137,7 +152,7 @@ def calculate_metrics(df_subset):
     try:
         kappa = ir.fleiss_kappa(fleiss_data)
     except:
-        return None, None, None, None, None, "Cannot compute Kappa: insufficient or uniform ratings."
+        return None, None, None, None, None, None, "Cannot compute Kappa: insufficient or uniform ratings."
     
     n_pairs = len(df_subset)
     n_referees = 5
@@ -167,8 +182,26 @@ def calculate_metrics(df_subset):
     z_score = kappa / se_kappa if se_kappa != 0 else float('inf')
     p_value = 2 * (1 - norm.cdf(abs(z_score))) if z_score != float('inf') else 0.0
     
+    # Calculate match outcomes (X-Y-Z: agree-disagree-tie)
+    outcomes = []
+    for _, row in df_subset.iterrows():
+        votes = row[['referee1', 'referee2', 'referee3', 'referee4', 'referee5']].values
+        winner = row['Final_Result']  # 1 (Chung) or 0 (Hong)
+        loser = 1 - winner  # Opposite of winner
+        agree_count = sum(votes == winner)  # Votes matching Final_Result
+        disagree_count = sum(votes == loser)  # Votes for loser
+        tie_count = sum(votes == 2)  # Tie votes
+        outcome = f"{agree_count}-{disagree_count}-{tie_count}"
+        outcomes.append(outcome)
+    
+    outcome_counts = pd.Series(outcomes).value_counts()
+    outcome_df = pd.DataFrame({
+        'Outcome': outcome_counts.index,
+        'Count': outcome_counts.values
+    }).sort_values('Outcome')  # Sort for consistent display
+    
     kappa_interpretation = interpret_kappa(kappa)
-    return kappa, P_bar, P_e, z_score, p_value, kappa_interpretation
+    return kappa, P_bar, P_e, z_score, p_value, outcome_df, kappa_interpretation
 
 # Load data
 db_path = 'PoomsaeProConnector/PoomsaePro.db'
@@ -185,7 +218,7 @@ df['DivisionCategory'] = df['Division'].apply(categorize_division)
 paired_df = pair_athletes(df)
 
 # Initial metrics
-kappa, P_bar, P_e, z_score, p_value, kappa_interpretation = calculate_metrics(paired_df)
+kappa, P_bar, P_e, z_score, p_value, outcome_df, kappa_interpretation = calculate_metrics(paired_df)
 
 # Dash Dashboard
 app = dash.Dash(__name__)
@@ -219,10 +252,12 @@ app.layout = html.Div([
     html.H4(id='z-score', children=f"Z-Score: {z_score:.3f}" if z_score is not None and z_score != float('inf') else "Z-Score: N/A"),
     html.H4(id='p-value', children=f"P-Value: {p_value:.4f}" if p_value is not None else "P-Value: N/A"),
     html.P("The chart below compares observed and expected agreement among referees for Chung vs. Hong ratings, including ties."),
-    dcc.Graph(id='agreement-chart')
+    dcc.Graph(id='agreement-chart'),
+    html.P("The pie chart below shows the distribution of match outcomes (X-Y-Z: referees agreeing with winner, disagreeing, and tying) based on Final_Result."),
+    dcc.Graph(id='outcome-pie-chart')
 ])
 
-# Callback to update metrics and chart
+# Callback to update metrics and charts
 @app.callback(
     [Output('kappa-display', 'children'),
      Output('kappa-interpretation', 'children'),
@@ -230,7 +265,8 @@ app.layout = html.Div([
      Output('expected-agreement', 'children'),
      Output('z-score', 'children'),
      Output('p-value', 'children'),
-     Output('agreement-chart', 'figure')],
+     Output('agreement-chart', 'figure'),
+     Output('outcome-pie-chart', 'figure')],
     [Input('event-filter', 'value'),
      Input('division-filter', 'value')]
 )
@@ -241,16 +277,24 @@ def update_dashboard(selected_events, selected_divisions):
     if selected_divisions:
         df_subset = df_subset[df_subset['DivisionCategory'].isin(selected_divisions)]
     
-    kappa, P_bar, P_e, z_score, p_value, kappa_interpretation = calculate_metrics(df_subset)
+    kappa, P_bar, P_e, z_score, p_value, outcome_df, kappa_interpretation = calculate_metrics(df_subset)
     
+    # Agreement bar chart
     chart_data = pd.DataFrame({
         'Metric': ['Observed Agreement', 'Expected Agreement'],
         'Value': [P_bar if P_bar is not None else 0, P_e if P_e is not None else 0]
     })
+    agreement_fig = px.bar(chart_data, x='Metric', y='Value',
+                          title="Observed vs. Expected Agreement",
+                          color='Metric', color_discrete_map={'Observed Agreement': '#1f77b4', 'Expected Agreement': '#ff7f0e'})
     
-    fig = px.bar(chart_data, x='Metric', y='Value',
-                 title="Observed vs. Expected Agreement",
-                 color='Metric', color_discrete_map={'Observed Agreement': '#1f77b4', 'Expected Agreement': '#ff7f0e'})
+    # Match outcome pie chart
+    if outcome_df.empty:
+        outcome_fig = px.pie(names=['No Data'], values=[1], title="Match Outcomes (X-Y-Z: Agree-Disagree-Tie)")
+    else:
+        outcome_fig = px.pie(outcome_df, names='Outcome', values='Count',
+                             title="Match Outcomes (X-Y-Z: Agree-Disagree-Tie)",
+                             color_discrete_sequence=px.colors.qualitative.Set3)
     
     return (
         f"Fleiss' Kappa: {kappa:.3f}" if kappa is not None else "Fleiss' Kappa: N/A",
@@ -259,7 +303,8 @@ def update_dashboard(selected_events, selected_divisions):
         f"Expected Agreement: {P_e:.3f}" if P_e is not None else "Expected Agreement: N/A",
         f"Z-Score: {z_score:.3f}" if z_score is not None and z_score != float('inf') else "Z-Score: N/A",
         f"P-Value: {p_value:.4f}" if p_value is not None else "P-Value: N/A",
-        fig
+        agreement_fig,
+        outcome_fig
     )
 
 if __name__ == '__main__':
