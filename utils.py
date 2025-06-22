@@ -58,3 +58,16 @@ def categorize_division(division):
             return 'Team'
         case _:
             return 'Individual'
+        
+def categorize_belt(category):
+    match category.lower():
+        case str(s) if 'yellow' in s:
+            return 'Yellow'
+        case str(s) if 'green' in s:
+            return 'Green'
+        case str(s) if 'blue' in s:
+            return 'Blue'
+        case str(s) if 'red' in s:
+            return 'Red'
+        case _:
+            return 'Black'
