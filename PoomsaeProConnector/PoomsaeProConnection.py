@@ -23,6 +23,15 @@ def formatPP_ScoresV2c(data, DatabaseID, tablename):
         df = pd.DataFrame(datawid)
         df.insert(loc=4, column='Rev',value='PP_V2c')
         datawid = [tuple(row) for row in df.to_numpy()]
+    
+    #code to account for DivisionNames change
+    if database['databasename'] == 'PP_ScoresV2c.accdb' and tablename == 'DivisionNames':
+        df = pd.DataFrame(datawid)
+        df['CompMth_Black'] = df.iloc[:,6]
+        df['CompOrder'] = df.iloc[:,4]
+        newdf = df.iloc[:,[0,1,2,3,9,8,6,4,5,7]]
+        #df[[0L,1L,2L,3L,'CompOrder','CompMeth_Black',6L,4L,5L,7L]]
+        datawid = [tuple(row) for row in newdf.to_numpy()]
 
     #update data to match column count
     curdatabase.execute(f"PRAGMA table_info("+tablename+")")
@@ -128,6 +137,7 @@ for event in events:
                 extractPP_ScoresV2c(DatabaseID, database)
             case 'PP_ScoresV3c.accdb': #Combo for Simultaneous
                 #V2c and V3c only differ by the SEMatchList table
+                #DivisionNames table has a different column layout
                 extractPP_ScoresV2c(DatabaseID, database)
             case _:
                 print(database['databasename']+' unknown database type.')

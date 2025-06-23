@@ -27,8 +27,8 @@ SELECT
                 WHEN 14 THEN D.Ro4MaleSimul--R4
                 WHEN 15 THEN D.Ro2MaleSimul--R2
                 ELSE 0
-            END 
-        END AS Simultaneous
+        END 
+    END AS Simultaneous
 FROM 
     Events E,
     PoomsaeScores P,
