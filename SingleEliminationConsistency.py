@@ -198,7 +198,12 @@ def calculate_metrics(df_subset):
     outcome_df = pd.DataFrame({
         'Outcome': outcome_counts.index,
         'Count': outcome_counts.values
-    }).sort_values('Outcome')  # Sort for consistent display
+    })
+    # Sort by wins (X) descending, then ties (Z) descending
+    outcome_df['Wins'] = outcome_df['Outcome'].apply(lambda x: int(x.split('-')[0]))
+    outcome_df['Ties'] = outcome_df['Outcome'].apply(lambda x: int(x.split('-')[2]))
+    outcome_df = outcome_df.sort_values(by=['Wins', 'Ties'], ascending=[False, False])
+    outcome_df = outcome_df[['Outcome', 'Count']]  # Drop temporary columns
     
     kappa_interpretation = interpret_kappa(kappa)
     return kappa, P_bar, P_e, z_score, p_value, outcome_df, kappa_interpretation
@@ -253,7 +258,7 @@ app.layout = html.Div([
     html.H4(id='p-value', children=f"P-Value: {p_value:.4f}" if p_value is not None else "P-Value: N/A"),
     html.P("The chart below compares observed and expected agreement among referees for Chung vs. Hong ratings, including ties."),
     dcc.Graph(id='agreement-chart'),
-    html.P("The pie chart below shows the distribution of match outcomes (X-Y-Z: referees agreeing with winner, disagreeing, and tying) based on Final_Result."),
+    html.P("The pie chart below shows the distribution of match outcomes (X-Y-Z: referees agreeing with winner, disagreeing, and tying) based on Final_Result, ordered by wins then ties."),
     dcc.Graph(id='outcome-pie-chart')
 ])
 

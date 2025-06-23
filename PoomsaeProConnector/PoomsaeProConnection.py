@@ -6,7 +6,7 @@ import sqlite3
 import pandas as pd
 from datetime import date
 
-def formatPP_ScoresV2c(data, DatabaseID, tablename):
+def formatPP_ScoresV2c(data, DatabaseID, tablename, event):
     #format data to match current tables
     #generall formatting
     #adds the DatabaseID for data consistenty
@@ -25,7 +25,8 @@ def formatPP_ScoresV2c(data, DatabaseID, tablename):
         datawid = [tuple(row) for row in df.to_numpy()]
     
     #code to account for DivisionNames change
-    if database['databasename'] == 'PP_ScoresV2c.accdb' and tablename == 'DivisionNames':
+    #This doesn't work for 2025 Team Trials
+    if database['databasename'] == 'PP_ScoresV2c.accdb' and tablename == 'DivisionNames' and event != '2025 USATKD Team Trials':
         df = pd.DataFrame(datawid)
         df['CompMth_Black'] = df.iloc[:,6]
         df['CompOrder'] = df.iloc[:,4]
@@ -66,7 +67,7 @@ def extractPP_ScoresV2c(DatabaseID, database):
                 cureventdata.execute(sql)
                 data = cureventdata.fetchall()
                 if len(data)>0:
-                    datawid = formatPP_ScoresV2c(data, DatabaseID, tablename)
+                    datawid = formatPP_ScoresV2c(data, DatabaseID, tablename, event['event'])
                     sql = 'INSERT INTO ' + tablename + ' VALUES ' + str(datawid).strip('[]')                    
                     curdatabase.execute(sql)
 
