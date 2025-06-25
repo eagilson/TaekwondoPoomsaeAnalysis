@@ -4,6 +4,11 @@ from dash import dcc, html, dash_table
 from dash.dependencies import Input, Output
 from utils import load_data, categorize_event, categorize_belt
 import numpy as np
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Load data
 db_path = 'PoomsaeProConnector/PoomsaePro.db'
@@ -13,16 +18,42 @@ df = load_data(db_path, sql_file_path)
 if df is None or df.empty:
     raise Exception("Failed to load data from database or no data returned.")
 
+# Log loaded columns for debugging
+logger.info(f"Loaded DataFrame columns: {list(df.columns)}")
+
 # Reset index to ensure uniqueness
 df = df.reset_index(drop=True)
 
+# Define expected columns for forms
+forms = ['A', 'B', 'T']
+expected_columns = []
+for form in forms:
+    expected_columns.extend([
+        f'Accuracy_{form}', f'Presentation_{form}',
+        f'Acc_Avg_{form}', f'Pre_Avg_{form}'
+    ])
+expected_columns.extend([
+    'Placement', 'Round_ID', 'OrderOfPerform', 'EventName', 'Division',
+    'Gender', 'Category', 'Round', 'RefereeName', 'Performance_ID',
+    'FormName_A', 'FormName_B', 'FormName_T', 'ScoreSource'
+])
+
+# Check for missing columns
+missing_columns = [col for col in expected_columns if col not in df.columns]
+if missing_columns:
+    logger.error(f"Missing columns in DataFrame: {missing_columns}")
+    raise KeyError(f"Missing required columns: {missing_columns}")
+
 # Convert score, average, placement, and order columns to numeric, coercing errors to NaN
-# Do NOT convert Round to numeric
-for form in ['A', 'B', 'T']:
-    df[f'Accuracy_{form}'] = pd.to_numeric(df[f'Accuracy_{form}'], errors='coerce')
-    df[f'Presentation_{form}'] = pd.to_numeric(df[f'Presentation_{form}'], errors='coerce')
-    df[f'Acc_Avg_{form}'] = pd.to_numeric(df[f'Acc_Avg_{form}'], errors='coerce')
-    df[f'Pre_Avg_{form}'] = pd.to_numeric(df[f'Pre_Avg_{form}'], errors='coerce')
+for form in forms:
+    if f'Accuracy_{form}' in df.columns:
+        df[f'Accuracy_{form}'] = pd.to_numeric(df[f'Accuracy_{form}'], errors='coerce')
+    if f'Presentation_{form}' in df.columns:
+        df[f'Presentation_{form}'] = pd.to_numeric(df[f'Presentation_{form}'], errors='coerce')
+    if f'Acc_Avg_{form}' in df.columns:
+        df[f'Acc_Avg_{form}'] = pd.to_numeric(df[f'Acc_Avg_{form}'], errors='coerce')
+    if f'Pre_Avg_{form}' in df.columns:
+        df[f'Pre_Avg_{form}'] = pd.to_numeric(df[f'Pre_Avg_{form}'], errors='coerce')
 df['Placement'] = pd.to_numeric(df['Placement'], errors='coerce')
 df['Round_ID'] = pd.to_numeric(df['Round_ID'], errors='coerce')
 df['OrderOfPerform'] = pd.to_numeric(df['OrderOfPerform'], errors='coerce')
@@ -49,13 +80,13 @@ def compute_referee_placement(group):
 
     # Calculate metrics for each performance
     for idx in group.index:
-        acc_a = group.at[idx, 'Accuracy_A']
-        pre_a = group.at[idx, 'Presentation_A']
-        form_b = group.at[idx, 'FormName_B']
-        acc_b = group.at[idx, 'Accuracy_B']
-        pre_b = group.at[idx, 'Presentation_B']
-        acc_t = group.at[idx, 'Accuracy_T']
-        pre_t = group.at[idx, 'Presentation_T']
+        acc_a = group.at[idx, 'Accuracy_A'] if 'Accuracy_A' in group.columns else np.nan
+        pre_a = group.at[idx, 'Presentation_A'] if 'Presentation_A' in group.columns else np.nan
+        form_b = group.at[idx, 'FormName_B'] if 'FormName_B' in group.columns else ''
+        acc_b = group.at[idx, 'Accuracy_B'] if 'Accuracy_B' in group.columns else np.nan
+        pre_b = group.at[idx, 'Presentation_B'] if 'Presentation_B' in group.columns else np.nan
+        acc_t = group.at[idx, 'Accuracy_T'] if 'Accuracy_T' in group.columns else np.nan
+        pre_t = group.at[idx, 'Presentation_T'] if 'Presentation_T' in group.columns else np.nan
 
         # Primary metric: Average of Acc+Pres for A and B (if B is valid)
         if pd.notna(acc_a) and pd.notna(pre_a) and acc_a != -1 and pre_a != -1:
@@ -72,7 +103,7 @@ def compute_referee_placement(group):
             group.at[idx, 'Avg_Pres_AB'] = np.mean(pres_scores)
         
         # Tiebreaker 2: Acc+Pres for T (if T is valid)
-        if (group.at[idx, 'FormName_T'] not in [None, 'None', '']) and pd.notna(acc_t) and pd.notna(pre_t) and acc_t != -1 and pre_t != -1:
+        if (group.at[idx, 'FormName_T'] not in [None, 'None', ''] if 'FormName_T' in group.columns else False) and pd.notna(acc_t) and pd.notna(pre_t) and acc_t != -1 and pre_t != -1:
             group.at[idx, 'Acc_Pres_T'] = acc_t + pre_t
 
         # Compute Ranking_Score
@@ -138,7 +169,7 @@ def compute_referee_placement(group):
         else:
             group['Referee_Placement'] = np.nan
 
-    return group[['EventName', 'Division', 'Gender', 'Category', 'Round', 'RefereeName', 'Performance_ID', 'Referee_Placement', 'Ranking_Score']]
+    return group[['Performance_ID', 'Referee_Placement', 'Ranking_Score']]
 
 # Apply Official Placement computation
 df = compute_official_placement(df)
@@ -146,7 +177,9 @@ df['Placement'] = df['Official_Placement']
 df = df.drop(columns=['Official_Placement'])
 
 # Apply Referee_Placement computation
-placement_df = df.groupby(['EventName', 'Division', 'Gender', 'Category', 'Round', 'RefereeName']).apply(compute_referee_placement).reset_index(drop=True)
+placement_df = df.groupby(['EventName', 'Division', 'Gender', 'Category', 'Round', 'RefereeName']).apply(compute_referee_placement, include_groups=False).reset_index()
+
+# Merge while preserving grouping columns
 df = df.merge(placement_df, on=['EventName', 'Division', 'Gender', 'Category', 'Round', 'RefereeName', 'Performance_ID'])
 
 # Renormalize Placement and Referee_Placement
@@ -167,15 +200,30 @@ def normalize_ranks(group):
             # If n=1, set to 0 (highest rank)
             group['Placement'] = 0
             group['Referee_Placement'] = 0
-    return group
+    return group[['Performance_ID', 'Placement', 'Referee_Placement']]
 
 # Apply normalization within each group
-df = df.groupby(['EventName', 'Division', 'Gender', 'Category', 'Round', 'RefereeName']).apply(normalize_ranks).reset_index(drop=True)
+normalized_df = df.groupby(['EventName', 'Division', 'Gender', 'Category', 'Round', 'RefereeName']).apply(normalize_ranks, include_groups=False).reset_index()
 
-# Compute difference columns for Accuracy and Presentation
-for form in ['A', 'B', 'T']:
-    df[f'Acc_Diff_{form}'] = df[f'Accuracy_{form}'] - df[f'Acc_Avg_{form}']
-    df[f'Pre_Diff_{form}'] = df[f'Presentation_{form}'] - df[f'Pre_Avg_{form}']
+# Merge normalized placements back to df
+df = df.merge(normalized_df[['EventName', 'Division', 'Gender', 'Category', 'Round', 'RefereeName', 'Performance_ID', 'Placement', 'Referee_Placement']], 
+              on=['EventName', 'Division', 'Gender', 'Category', 'Round', 'RefereeName', 'Performance_ID'], 
+              how='left', 
+              suffixes=('', '_new'))
+
+# Update Placement and Referee_Placement with normalized values
+df['Placement'] = df['Placement_new']
+df['Referee_Placement'] = df['Referee_Placement_new']
+df = df.drop(columns=['Placement_new', 'Referee_Placement_new'])
+
+# Compute difference columns for Accuracy and Presentation, with validation
+for form in forms:
+    if (f'Accuracy_{form}' in df.columns and f'Acc_Avg_{form}' in df.columns and 
+        f'Presentation_{form}' in df.columns and f'Pre_Avg_{form}' in df.columns):
+        df[f'Acc_Diff_{form}'] = df[f'Accuracy_{form}'] - df[f'Acc_Avg_{form}']
+        df[f'Pre_Diff_{form}'] = df[f'Presentation_{form}'] - df[f'Pre_Avg_{form}']
+    else:
+        logger.warning(f"Skipping difference computation for form {form} due to missing columns")
 
 # Preprocess data
 df['Event_Category'] = df['Division'].apply(categorize_event)
@@ -184,10 +232,10 @@ df['Event_Category'] = df['Division'].apply(categorize_event)
 def compute_referee_score(row):
     score = 0
     count = 0
-    for form in ['A', 'B', 'T']:
-        if row[f'FormName_{form}'] not in [None, 'None', '']:
-            acc = row[f'Accuracy_{form}']
-            pre = row[f'Presentation_{form}']
+    for form in forms:
+        if row.get(f'FormName_{form}') not in [None, 'None', '']:
+            acc = row.get(f'Accuracy_{form}', np.nan)
+            pre = row.get(f'Presentation_{form}', np.nan)
             if pd.notna(acc) and pd.notna(pre) and acc != -1 and pre != -1:
                 score += acc + pre
                 count += 1
@@ -203,22 +251,27 @@ def compute_stats(group):
     acc_diffs = []
     
     # Filter rows for each form based on valid FormName and non -1 scores
-    for form in ['A', 'B', 'T']:
-        valid_rows = group[
-            (group[f'FormName_{form}'].notna()) & 
-            (group[f'FormName_{form}'] != 'None') & 
-            (group[f'FormName_{form}'] != '') & 
-            (group[f'Accuracy_{form}'] != -1) & 
-            (group[f'Presentation_{form}'] != -1)
-        ]
-        if not valid_rows.empty:
-            # Extract differences where scores are valid
-            pre_diff = valid_rows[f'Pre_Diff_{form}']
-            acc_diff = valid_rows[f'Acc_Diff_{form}']
-            if not pre_diff.empty and pre_diff.notna().any():
-                pre_diffs.extend(pre_diff[pre_diff.notna()])
-            if not acc_diff.empty and acc_diff.notna().any():
-                acc_diffs.extend(acc_diff[acc_diff.notna()])
+    for form in forms:
+        if (f'FormName_{form}' in group.columns and 
+            f'Accuracy_{form}' in group.columns and 
+            f'Presentation_{form}' in group.columns):
+            valid_rows = group[
+                (group[f'FormName_{form}'].notna()) & 
+                (group[f'FormName_{form}'] != 'None') & 
+                (group[f'FormName_{form}'] != '') & 
+                (group[f'Accuracy_{form}'] != -1) & 
+                (group[f'Presentation_{form}'] != -1)
+            ]
+            if not valid_rows.empty:
+                # Extract differences where scores are valid
+                if f'Pre_Diff_{form}' in valid_rows.columns:
+                    pre_diff = valid_rows[f'Pre_Diff_{form}']
+                    if not pre_diff.empty and pre_diff.notna().any():
+                        pre_diffs.extend(pre_diff[pre_diff.notna()])
+                if f'Acc_Diff_{form}' in valid_rows.columns:
+                    acc_diff = valid_rows[f'Acc_Diff_{form}']
+                    if not acc_diff.empty and acc_diff.notna().any():
+                        acc_diffs.extend(acc_diff[acc_diff.notna()])
     
     # Convert to Series for computation
     pre_diffs = pd.Series(pre_diffs)
@@ -233,14 +286,14 @@ def compute_stats(group):
     }
     # Compute correlation between normalized referee placement and placement
     valid_rows = group[['Referee_Placement', 'Placement']].dropna()
-    if len(valid_rows) > 1:
+    if len(valid_rows) > 1 and valid_rows['Referee_Placement'].std() > 0 and valid_rows['Placement'].std() > 0:
         stats['Correlation'] = valid_rows['Referee_Placement'].corr(valid_rows['Placement'])
     else:
         stats['Correlation'] = np.nan
     return pd.Series(stats)
 
-# Group by RefereeName, EventName, Event_Category, and Belt
-stats_df = df.groupby(['RefereeName', 'EventName', 'Event_Category', 'Belt']).apply(compute_stats, include_groups=False).reset_index()
+# Group by RefereeName, EventName, Event_Category
+stats_df = df.groupby(['RefereeName', 'EventName', 'Event_Category']).apply(compute_stats, include_groups=False).reset_index()
 
 # Round numeric columns for display to 3 decimal places
 numeric_cols = ['Correlation', 'Presentation_Diff_SD', 'Accuracy_Diff_SD', 'Presentation_Diff_Mean', 'Accuracy_Diff_Mean']
@@ -352,7 +405,14 @@ def update_table(referee, event, category, belt):
     if category:
         filtered_df = filtered_df[filtered_df['Event_Category'] == category]
     if belt:
-        filtered_df = filtered_df[filtered_df['Belt'].isin(belt)]
+        # Filter df by Belt and get unique combinations of RefereeName, EventName, Event_Category
+        belt_filtered_df = df[df['Belt'].isin(belt)][['RefereeName', 'EventName', 'Event_Category']].drop_duplicates()
+        # Filter stats_df to only include rows matching the filtered combinations
+        filtered_df = filtered_df.merge(
+            belt_filtered_df,
+            on=['RefereeName', 'EventName', 'Event_Category'],
+            how='inner'
+        )
     return filtered_df.to_dict('records')
 
 if __name__ == '__main__':
