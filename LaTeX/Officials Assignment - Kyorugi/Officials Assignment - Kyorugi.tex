@@ -20,6 +20,7 @@
 \usepackage{fancyhdr}
 \usepackage{microtype}
 \usepackage{multirow}
+\usepackage{xcolor}
 
 % Configuring header and footer
 \pagestyle{fancy}
@@ -45,7 +46,7 @@
 % Footer setup
 \cfoot{
 	\small
-	R - Referee \quad J1 - Judge 1 \quad J2 - Judge 2 \quad J3 - Judge 3 \quad J4 - Judge 4 \quad C - Competition Coordinator \quad CO - Computer Operator
+	R - Referee \quad J1 - Judge 1 \quad J2 - Judge 2 \quad CO - Computer Operator \quad TA - Technical Assistant \quad VJ - Video Jury
 }
 
 % Increasing row height for the table
@@ -60,43 +61,46 @@
 	% Creating the main table directly (no table environment)
 	\centering
 	\footnotesize % Using smaller font to fit 15 rows on one page
-	\begin{tabular}{|p{1.5cm}|p{1.5cm}|p{1.4cm}|p{1.4cm}|p{1.4cm}|p{1.5cm}|
-			p{1.1cm}|p{1.1cm}|p{1.1cm}|p{1.1cm}|p{1.1cm}|p{1.1cm}|p{1.1cm}|p{1.1cm}|p{1.1cm}|p{1.1cm}|}
+	\setlength\doublerulesep{0.5cm} 
+	\begin{tabular}{|p{4.5cm}|p{1.1cm}|p{1.1cm}
+			|p{0.5cm}|p{0.5cm}|p{0.5cm}|p{0.5cm}|p{0.5cm}|p{0.5cm}|p{0.5cm}|p{0.5cm}|p{0.5cm}|p{0.5cm}|p{0.5cm}|p{0.5cm}|p{0.5cm}|p{0.5cm}|p{0.5cm}|p{0.5cm}|p{0.5cm}|p{0.5cm}|p{0.5cm}|p{0.5cm}|}
 		\hline
-		\multicolumn{6}{|c|}{\textbf{Division/Round}} & \multicolumn{10}{c|}{\textbf{Referee Name}} \\
+		\multicolumn{3}{|l|}{\textbf{Match Number}} & & & & & & & & & & & & & & & & & & & & \\
 		\hline
-		\centering\textbf{Match \# From} & \centering\textbf{Match \# To} & \centering\textbf{Division} & \centering\textbf{Gender} & \centering\textbf{Round} & \centering\textbf{Category} & & & & & & & & & & \\
+		\multicolumn{3}{|l|}{\textbf{Fighter (\textcolor{blue}{Choung}) NOC}} & & & & & & & & & & & & & & & & & & & & \\
 		\hline
-		& & & & & & & & & & & & & & & \\
+		\multicolumn{3}{|l|}{\textbf{Fighter (\textcolor{red}{Hong}) NOC}} & & & & & & & & & & & & & & & & & & & & \\
 		\hline
-		& & & & & & & & & & & & & & & \\
 		\hline
-		& & & & & & & & & & & & & & & \\
+		\textbf{Referee Name} & \textbf{Ref \#} & \textbf{NOC} & & & & & & & & & & & & & & & & & & & & \\
 		\hline
-		& & & & & & & & & & & & & & & \\
+		& & & & & & & & & & & & & & & & & & & & & & \\
 		\hline
-		& & & & & & & & & & & & & & & \\
+		& & & & & & & & & & & & & & & & & & & & & & \\
 		\hline
-		& & & & & & & & & & & & & & & \\
+		& & & & & & & & & & & & & & & & & & & & & & \\
 		\hline
-		& & & & & & & & & & & & & & & \\
+		& & & & & & & & & & & & & & & & & & & & & & \\
 		\hline
-		& & & & & & & & & & & & & & & \\
+		& & & & & & & & & & & & & & & & & & & & & & \\
 		\hline
-		& & & & & & & & & & & & & & & \\
+		& & & & & & & & & & & & & & & & & & & & & & \\
 		\hline
-		& & & & & & & & & & & & & & & \\
+		& & & & & & & & & & & & & & & & & & & & & & \\
 		\hline
-		& & & & & & & & & & & & & & & \\
+		& & & & & & & & & & & & & & & & & & & & & & \\
 		\hline
-		& & & & & & & & & & & & & & & \\
+		& & & & & & & & & & & & & & & & & & & & & & \\
 		\hline
-		& & & & & & & & & & & & & & & \\
+		& & & & & & & & & & & & & & & & & & & & & & \\
 		\hline
-		& & & & & & & & & & & & & & & \\
+		& & & & & & & & & & & & & & & & & & & & & & \\
 		\hline
-		& & & & & & & & & & & & & & & \\
+		& & & & & & & & & & & & & & & & & & & & & & \\
 		\hline
+		& & & & & & & & & & & & & & & & & & & & & & \\
+		\hline
+
 	\end{tabular}
 	
 \end{document}

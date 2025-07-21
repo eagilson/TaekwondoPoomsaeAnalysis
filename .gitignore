@@ -1,11 +1,7 @@
-# Data directory must be ignored
-/data
+#System Build folders
 /.vscode
 /__pycache__
 PoomsaeProConnector/__pycache__
-PoomsaeProConnector/PoomsaePro.db
-output.txt
-PoomsaeProConnector/2024GPFinalFix.py
 
 #LaTeX build Files
 *.jpg
@@ -13,3 +9,12 @@ PoomsaeProConnector/2024GPFinalFix.py
 /LaTeX/**/*.log
 /LaTeX/**/*.pdf
 /LaTeX/**/*.gz
+
+#Event Data
+#No event data is permitted on the GitHub for the project
+/data
+PoomsaeProConnector/PoomsaePro.db
+
+#Ad Hoc Files for specific events
+output.txt
+PoomsaeProConnector/2024GPFinalFix.py
