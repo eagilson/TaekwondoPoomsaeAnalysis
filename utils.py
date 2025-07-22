@@ -71,3 +71,17 @@ def categorize_belt(category):
             return 'Red'
         case _:
             return 'Black'
+        
+def extract_age(text):
+    # Find positions of hyphen and [
+    hyphen_pos = text.find('-')
+    bracket_pos = text.find('[')
+    
+    # If no [ is found, set end to the length of the string
+    end = bracket_pos if bracket_pos != -1 else len(text)
+    
+    # If hyphen is before [ (or [ is not found), start after hyphen; otherwise, start at 0
+    start = hyphen_pos + 1 if hyphen_pos != -1 and (bracket_pos == -1 or hyphen_pos < bracket_pos) else 0
+    
+    # Extract substring and trim spaces
+    return text[start:end].strip()

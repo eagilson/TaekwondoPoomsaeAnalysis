@@ -3,7 +3,7 @@ import statsmodels.stats.inter_rater as ir
 import dash
 from dash import html, dcc, Input, Output
 import plotly.express as px
-from utils import categorize_event, load_data, categorize_division
+from utils import categorize_event, load_data, categorize_division, extract_age
 from scipy.stats import norm
 
 # Compute referee ratings with tiebreakers
@@ -72,11 +72,16 @@ def compute_final_result(row_a, row_b):
 
 # Pair athletes within EventName, Division, Gender, Category, and Round_ID
 def pair_athletes(df):
+    if df is None or not isinstance(df, pd.DataFrame):
+        print("Error: Input DataFrame is None or invalid")
+        return pd.DataFrame()  # Return empty DataFrame instead of None
+    
     # Verify required columns exist
-    required_columns = ['EventName', 'Division', 'Gender', 'Category', 'Round_ID', 'OrderOfPerform', 'CompetitorNbr']
+    required_columns = ['EventName', 'Division', 'DivisionAge', 'Gender', 'Category', 'Round_ID', 'OrderOfPerform', 'CompetitorNbr']
     missing_columns = [col for col in required_columns if col not in df.columns]
     if missing_columns:
-        raise ValueError(f"Missing required columns in input DataFrame: {', '.join(missing_columns)}")
+        print(f"Error: Missing required columns in input DataFrame: {', '.join(missing_columns)}")
+        return pd.DataFrame()  # Return empty DataFrame instead of raising error
     
     paired_data = []
     # Iterate over unique combinations of EventName, Division, Gender, Category, and Round_ID
@@ -106,6 +111,7 @@ def pair_athletes(df):
                     paired_data.append({
                         'EventName': chung_row['EventName'],
                         'Division': chung_row['Division'],
+                        'DivisionAge': chung_row['DivisionAge'],
                         'DivisionCategory': chung_row['DivisionCategory'],
                         'Gender': chung_row['Gender'],
                         'Category': chung_row['Category'],
@@ -141,8 +147,8 @@ def interpret_kappa(kappa):
 
 # Calculate metrics, including z-score, p-value, and match outcomes with ties
 def calculate_metrics(df_subset):
-    if df_subset.empty:
-        return None, None, None, None, None, None, "No data available for selected events or divisions."
+    if df_subset is None or not isinstance(df_subset, pd.DataFrame) or df_subset.empty:
+        return None, None, None, None, None, pd.DataFrame({'Outcome': [], 'Count': []}), "No data available for selected events or divisions."
     
     # Three categories: 0 (Hong), 1 (Chung), 2 (Tie)
     fleiss_data = [[sum(row[['referee1', 'referee2', 'referee3', 'referee4', 'referee5']] == 0),
@@ -151,8 +157,9 @@ def calculate_metrics(df_subset):
                    for _, row in df_subset.iterrows()]
     try:
         kappa = ir.fleiss_kappa(fleiss_data)
-    except:
-        return None, None, None, None, None, None, "Cannot compute Kappa: insufficient or uniform ratings."
+    except Exception as e:
+        print(f"Error computing Fleiss' Kappa: {str(e)}")
+        return None, None, None, None, None, pd.DataFrame({'Outcome': [], 'Count': []}), "Cannot compute Kappa: insufficient or uniform ratings."
     
     n_pairs = len(df_subset)
     n_referees = 5
@@ -212,15 +219,23 @@ def calculate_metrics(df_subset):
 db_path = 'PoomsaeProConnector/PoomsaePro.db'
 sql_file_path = 'sql/RefereeScoresSingleElimination.sql'
 df = load_data(db_path, sql_file_path)
-if df is None:
-    raise Exception("Failed to load data")
+if df is None or not isinstance(df, pd.DataFrame):
+    print("Error: Failed to load data from database")
+    df = pd.DataFrame()  # Initialize empty DataFrame to prevent None
 
 # Add categorizations
-df['EventCategory'] = df['EventName'].apply(categorize_event)
-df['DivisionCategory'] = df['Division'].apply(categorize_division)
+if not df.empty:
+    df['EventCategory'] = df['EventName'].apply(categorize_event)
+    df['DivisionCategory'] = df['Division'].apply(categorize_division)
+    df['DivisionAge'] = df['Division'].apply(extract_age)
+else:
+    print("Warning: No data loaded; proceeding with empty DataFrame")
 
 # Process data
 paired_df = pair_athletes(df)
+if paired_df is None or not isinstance(paired_df, pd.DataFrame):
+    print("Error: pair_athletes returned None or invalid DataFrame")
+    paired_df = pd.DataFrame()  # Initialize empty DataFrame
 
 # Initial metrics
 kappa, P_bar, P_e, z_score, p_value, outcome_df, kappa_interpretation = calculate_metrics(paired_df)
@@ -229,8 +244,8 @@ kappa, P_bar, P_e, z_score, p_value, outcome_df, kappa_interpretation = calculat
 app = dash.Dash(__name__)
 
 # Dropdown options
-event_options = [{'label': event, 'value': event} for event in sorted(paired_df['EventName'].unique())]
-division_options = [{'label': div, 'value': div} for div in sorted(paired_df['DivisionCategory'].unique())]
+event_options = [{'label': event, 'value': event} for event in sorted(paired_df['EventName'].unique())] if not paired_df.empty else []
+division_category_options = [{'label': div, 'value': div} for div in sorted(paired_df['DivisionCategory'].unique())] if not paired_df.empty else []
 
 app.layout = html.Div([
     html.H1("Taekwondo Poomsae Referee Agreement Dashboard"),
@@ -245,10 +260,18 @@ app.layout = html.Div([
     html.Label("Select Division Category(s):", style={'marginTop': '10px'}),
     dcc.Dropdown(
         id='division-filter',
-        options=division_options,
-        value=None,  # Default: all divisions
+        options=division_category_options,
+        value=None,  # Default: all division categories
         multi=True,
         placeholder="Select one or more division categories..."
+    ),
+    html.Label("Select Division(s):", style={'marginTop': '10px'}),
+    dcc.Dropdown(
+        id='division-selection',
+        options=[],
+        value=None,  # Default: all divisions
+        multi=True,
+        placeholder="Select one or more divisions..."
     ),
     html.H3(id='kappa-display', children=f"Fleiss' Kappa: {kappa:.3f}" if kappa is not None else "Fleiss' Kappa: N/A"),
     html.H4(id='kappa-interpretation', children=f"Interpretation: {kappa_interpretation}"),
@@ -262,6 +285,25 @@ app.layout = html.Div([
     dcc.Graph(id='outcome-pie-chart')
 ])
 
+# Callback to update DivisionAge dropdown options
+@app.callback(
+    Output('division-selection', 'options'),
+    [Input('event-filter', 'value'),
+     Input('division-filter', 'value')]
+)
+def update_division_age_options(selected_events, selected_division_categories):
+    df_subset = paired_df
+    if df_subset is None or not isinstance(df_subset, pd.DataFrame):
+        df_subset = pd.DataFrame()
+    
+    if selected_events:
+        df_subset = df_subset[df_subset['EventName'].isin(selected_events)]
+    if selected_division_categories:
+        df_subset = df_subset[df_subset['DivisionCategory'].isin(selected_division_categories)]
+    
+    division_age_options = [{'label': div, 'value': div} for div in sorted(df_subset['DivisionAge'].unique())] if not df_subset.empty else []
+    return division_age_options
+
 # Callback to update metrics and charts
 @app.callback(
     [Output('kappa-display', 'children'),
@@ -273,14 +315,20 @@ app.layout = html.Div([
      Output('agreement-chart', 'figure'),
      Output('outcome-pie-chart', 'figure')],
     [Input('event-filter', 'value'),
-     Input('division-filter', 'value')]
+     Input('division-filter', 'value'),
+     Input('division-selection', 'value')]
 )
-def update_dashboard(selected_events, selected_divisions):
+def update_dashboard(selected_events, selected_division_categories, selected_division_ages):
     df_subset = paired_df
+    if df_subset is None or not isinstance(df_subset, pd.DataFrame):
+        df_subset = pd.DataFrame()
+    
     if selected_events:
         df_subset = df_subset[df_subset['EventName'].isin(selected_events)]
-    if selected_divisions:
-        df_subset = df_subset[df_subset['DivisionCategory'].isin(selected_divisions)]
+    if selected_division_categories:
+        df_subset = df_subset[df_subset['DivisionCategory'].isin(selected_division_categories)]
+    if selected_division_ages:
+        df_subset = df_subset[df_subset['DivisionAge'].isin(selected_division_ages)]
     
     kappa, P_bar, P_e, z_score, p_value, outcome_df, kappa_interpretation = calculate_metrics(df_subset)
     
