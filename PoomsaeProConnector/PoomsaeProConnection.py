@@ -6,7 +6,7 @@ import sqlite3
 import pandas as pd
 from datetime import date
 
-def formatPP_ScoresV2c(data, DatabaseID, tablename, event):
+def formatPP_ScoresV2c(data, DatabaseID, tablename, event, start_date):
     #format data to match current tables
     #generall formatting
     #adds the DatabaseID for data consistenty
@@ -33,6 +33,14 @@ def formatPP_ScoresV2c(data, DatabaseID, tablename, event):
         newdf = df.iloc[:,[0,1,2,3,9,8,6,4,5,7]]
         #df[[0L,1L,2L,3L,'CompOrder','CompMeth_Black',6L,4L,5L,7L]]
         datawid = [tuple(row) for row in newdf.to_numpy()]
+
+    #code for V3c update on 2025-07
+    if start_date < '2025-07-01' and database['databasename'] == 'PP_ScoresV3c.accdb' and tablename == 'SEMatchList':
+        #SEMatchList table missing NextMatch & Breaking columns
+        df = pd.DataFrame(datawid)
+        df.insert(loc=4, column='NextMatch',value='')
+        df.insert(loc=5, column='Breaking',value=False)
+        datawid = [tuple(row) for row in df.to_numpy()]
 
     #update data to match column count
     curdatabase.execute(f"PRAGMA table_info("+tablename+")")
@@ -67,7 +75,7 @@ def extractPP_ScoresV2c(DatabaseID, database):
                 cureventdata.execute(sql)
                 data = cureventdata.fetchall()
                 if len(data)>0:
-                    datawid = formatPP_ScoresV2c(data, DatabaseID, tablename, event['event'])
+                    datawid = formatPP_ScoresV2c(data, DatabaseID, tablename, event['event'], event['start-date'])
                     sql = 'INSERT INTO ' + tablename + ' VALUES ' + str(datawid).strip('[]')                    
                     curdatabase.execute(sql)
 

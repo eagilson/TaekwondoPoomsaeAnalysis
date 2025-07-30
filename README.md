@@ -9,3 +9,8 @@ Steps to build the PoomsaePro data for analysis:
 1. PoomsaeProConnector/PoomsaeProConnection.py is used to build the database of scores
 2. PoomsaeProConnector/PoomsaeProRefereeCreation.py is run to generate the excel file to record referee position.
 3. PoomsaeProConnector/PoomsaeProRefereeImport.py is run to import the referee positions into the database.
+
+# Project Objective
+
+# Scoring Systems
+## Poomsae Pro

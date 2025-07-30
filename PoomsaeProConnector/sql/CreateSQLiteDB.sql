@@ -796,7 +796,9 @@ CREATE TABLE IF NOT EXISTS SEMatchList
  (
     DatabaseID INTEGER NOT NULL,
 	ID Integer NOT NULL, 
-	MatchNo Text NOT NULL, 
+	MatchNo Text NOT NULL,
+	NextMatch Text NOT NULL, --2025-07
+	Breaking Boolean, --2025-07
 	Gender Integer NOT NULL, 
 	Division Integer NOT NULL, 
 	Category Integer NOT NULL, 
