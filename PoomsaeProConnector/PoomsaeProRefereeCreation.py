@@ -31,7 +31,7 @@ for event in events:
         data = {'eventname':event['event']}
         curdatabase.execute(sql, data)
         divisionlist = curdatabase.fetchall()
-        columns = ['Division','Gender','Category','Round','RingNbr','MatchNo']
+        columns = ['Division','Gender','Category','Round','Day','RingNbr','MatchNo']
         df = pd.DataFrame(divisionlist, columns=columns)
 
         #update json with new file name

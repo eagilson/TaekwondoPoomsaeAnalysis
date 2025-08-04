@@ -5,7 +5,7 @@ from pathlib import Path
 
 from utils import worksheet_exists
 
-def CreateRefereeAssignment (row, refereedata, event):
+def CreateRefereeAssignment (row, refereedata, event, day):
     #usually only 5 judges
     position = ('R','J1','J2','J3','J4','J5','J6')
     for p in position:
@@ -15,9 +15,9 @@ def CreateRefereeAssignment (row, refereedata, event):
             referee = row[row == p].index[0]  
             #statement for V3c databases with Match Numbers
             if 'MatchNo' in row.index:
-                refereeassignment = (event,row['Division'],row['Gender'],row['Category'],row['Round'],row['RingNbr'],row['MatchNo'],p,referee)
+                refereeassignment = (event,row['Division'],row['Gender'],row['Category'],row['Round'],row['RingNbr'],day,row['MatchNo'],p,referee)
             else:
-                refereeassignment = (event,row['Division'],row['Gender'],row['Category'],row['Round'],row['RingNbr'],'',p,referee)
+                refereeassignment = (event,row['Division'],row['Gender'],row['Category'],row['Round'],row['RingNbr'],day,'',p,referee)
             refereedata.append(refereeassignment)
 
 #connect to the database
@@ -47,7 +47,13 @@ for event in events:
         df = pd.read_excel(event['path']+'/'+event['refereedata'], sheet_name='Ring Assignments', dtype={'MatchNo': str}, na_filter=False)
         #flatten to same form as database
         for index,row in df.iterrows():
-            CreateRefereeAssignment (row, refereedata, event['event'])
+            #Check if Excel has Comp Day
+            if 'Day' in row.index:
+                day = row['Day']
+            else:
+                day = 0
+            #Call referee assignment logic
+            CreateRefereeAssignment (row, refereedata, event['event'], day)
         #insert into database
         if not refereedata:
             print('No data for '+event['event'])

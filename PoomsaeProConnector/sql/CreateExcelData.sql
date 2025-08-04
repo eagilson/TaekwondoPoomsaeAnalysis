@@ -3,6 +3,7 @@ SELECT DISTINCT
     G.Gender,
     C.Category,
     R.Round,
+    E.CompDay, --Added for 2025 Nationals
     P.RingNbr,
     S.MatchNo --Modified for V3c
 FROM 
@@ -35,6 +36,7 @@ SELECT DISTINCT
     G.Gender,
     C.Category,
     R.Round,
+    E.CompDay, --Added for 2025 Nationals
     P.RingNbr,
     S.MatchNo --Modified for V3c
 FROM 
