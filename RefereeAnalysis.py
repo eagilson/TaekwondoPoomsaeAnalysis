@@ -295,76 +295,122 @@ def compute_stats(group):
 # Initialize Dash app
 app = dash.Dash(__name__)
 
+# Define columns for raw data table
+raw_data_columns = [
+    {'name': 'Event Name', 'id': 'EventName'},
+    {'name': 'Referee Name', 'id': 'RefereeName'},
+    {'name': 'Division', 'id': 'Division'},
+    {'name': 'Gender', 'id': 'Gender'},
+    {'name': 'Category', 'id': 'Category'},
+    {'name': 'Round', 'id': 'Round'},
+    #{'name': 'Match Number', 'id': 'MatchNo'},
+    {'name': 'Performance ID', 'id': 'Performance_ID'},
+    {'name': 'Accuracy A', 'id': 'Accuracy_A'},
+    {'name': 'Presentation A', 'id': 'Presentation_A'},
+    {'name': 'Accuracy B', 'id': 'Accuracy_B'},
+    {'name': 'Presentation B', 'id': 'Presentation_B'},
+    {'name': 'Accuracy T', 'id': 'Accuracy_T'},
+    {'name': 'Presentation T', 'id': 'Presentation_T'},
+    {'name': 'Referee Score', 'id': 'Referee_Score'},
+    {'name': 'Referee Placement', 'id': 'Referee_Placement'},
+    {'name': 'Official Placement', 'id': 'Placement'},
+]
+
 # Layout
 app.layout = html.Div([
     html.H1("Referee Scoring Performance Dashboard"),
     html.Div([
-        html.Label("Event:"),
-        dcc.Dropdown(
-            id='event-filter',
-            options=[{'label': event, 'value': event} for event in sorted(df['EventName'].unique())],
-            value=None,
-            multi=True,
-            placeholder="Select Event(s)"
-        ),
-    ], style={'marginBottom': 20, 'width': '30%'}),
-    html.Div([
-        html.Label("Referee Name:"),
-        dcc.Dropdown(
-            id='referee-filter',
-            options=[{'label': name, 'value': name} for name in sorted(df['RefereeName'].unique())],
-            value=None,
-            multi=True,
-            placeholder="Select Referee(s)"
-        ),
-    ], style={'marginBottom': 20, 'width': '30%'}),
-    html.Div([
-        html.Label("Event Category:"),
-        dcc.Dropdown(
-            id='category-filter',
-            options=[{'label': cat, 'value': cat} for cat in sorted(df['Event_Category'].unique())],
-            value=None,
-            multi=False,
-            placeholder="Select Event Category"
-        ),
-    ], style={'marginBottom': 20, 'width': '30%'}),
-    html.Div([
-        html.Label("Belt:"),
-        dcc.Dropdown(
-            id='belt-filter',
-            options=[{'label': belt, 'value': belt} for belt in sorted(df['Belt'].unique())],
-            value=None,
-            multi=True,
-            placeholder="Select Belt(s)"
-        ),
-    ], style={'marginBottom': 20, 'width': '30%'}),
-    dcc.Loading(
-        id="loading",
-        type="circle",
-        children=[
-            dash_table.DataTable(
-                id='stats-table',
-                columns=[
-                    {'name': 'Referee Name', 'id': 'RefereeName'},
-                    {'name': 'Event', 'id': 'EventName'},
-                    {'name': 'Event Category', 'id': 'Event_Category'},
-                    {'name': 'Athletes', 'id': 'Athletes'},
-                    {'name': 'Correlation', 'id': 'Correlation'},
-                    {'name': 'Presentation Diff SD', 'id': 'Presentation_Diff_SD'},
-                    {'name': 'Accuracy Diff SD', 'id': 'Accuracy_Diff_SD'},
-                    {'name': 'Presentation Diff Mean', 'id': 'Presentation_Diff_Mean'},
-                    {'name': 'Accuracy Diff Mean', 'id': 'Accuracy_Diff_Mean'},
-                ],
-                data=[],
-                style_table={'overflowX': 'auto'},
-                style_cell={'textAlign': 'left', 'padding': '5px', 'minWidth': '100px', 'maxWidth': '200px'},
-                style_header={'fontWeight': 'bold', 'backgroundColor': '#f8f9fa'},
-                page_size=10,
-                sort_action='native',
-                filter_action='native',
+        html.Div([
+            html.Label("Event:"),
+            dcc.Dropdown(
+                id='event-filter',
+                options=[{'label': event, 'value': event} for event in sorted(df['EventName'].unique())],
+                value=None,
+                multi=True,
+                placeholder="Select Event(s)"
+            ),
+        ], style={'marginBottom': 20, 'width': '48%', 'marginRight': '2%'}),
+        html.Div([
+            html.Label("Referee Name:"),
+            dcc.Dropdown(
+                id='referee-filter',
+                options=[{'label': name, 'value': name} for name in sorted(df['RefereeName'].unique())],
+                value=None,
+                multi=True,
+                placeholder="Select Referee(s)"
+            ),
+        ], style={'marginBottom': 20, 'width': '48%'}),
+        html.Div([
+            html.Label("Event Category:"),
+            dcc.Dropdown(
+                id='category-filter',
+                options=[{'label': cat, 'value': cat} for cat in sorted(df['Event_Category'].unique())],
+                value=None,
+                multi=False,
+                placeholder="Select Event Category"
+            ),
+        ], style={'marginBottom': 20, 'width': '48%', 'marginRight': '2%'}),
+        html.Div([
+            html.Label("Belt:"),
+            dcc.Dropdown(
+                id='belt-filter',
+                options=[{'label': belt, 'value': belt} for belt in sorted(df['Belt'].unique())],
+                value=None,
+                multi=True,
+                placeholder="Select Belt(s)"
+            ),
+        ], style={'marginBottom': 20, 'width': '48%'}),
+    ], style={'display': 'flex', 'flexWrap': 'wrap'}),
+    dcc.Tabs([
+        dcc.Tab(label='Summary Statistics', children=[
+            dcc.Loading(
+                id="loading-stats",
+                type="circle",
+                children=[
+                    dash_table.DataTable(
+                        id='stats-table',
+                        columns=[
+                            {'name': 'Referee Name', 'id': 'RefereeName'},
+                            {'name': 'Event', 'id': 'EventName'},
+                            {'name': 'Event Category', 'id': 'Event_Category'},
+                            {'name': 'Athletes', 'id': 'Athletes'},
+                            {'name': 'Correlation', 'id': 'Correlation'},
+                            {'name': 'Presentation Diff SD', 'id': 'Presentation_Diff_SD'},
+                            {'name': 'Accuracy Diff SD', 'id': 'Accuracy_Diff_SD'},
+                            {'name': 'Presentation Diff Mean', 'id': 'Presentation_Diff_Mean'},
+                            {'name': 'Accuracy Diff Mean', 'id': 'Accuracy_Diff_Mean'},
+                        ],
+                        data=[],
+                        style_table={'overflowX': 'auto'},
+                        style_cell={'textAlign': 'left', 'padding': '5px', 'minWidth': '100px', 'maxWidth': '200px'},
+                        style_header={'fontWeight': 'bold', 'backgroundColor': '#f8f9fa'},
+                        page_size=10,
+                        sort_action='native',
+                        filter_action='native',
+                    )
+                ]
             )
-        ]
-    )
+        ]),
+        dcc.Tab(label='Raw Data', children=[
+            dcc.Loading(
+                id="loading-raw",
+                type="circle",
+                children=[
+                    dash_table.DataTable(
+                        id='raw-data-table',
+                        columns=raw_data_columns,
+                        data=[],
+                        style_table={'overflowX': 'auto'},
+                        style_cell={'textAlign': 'left', 'padding': '5px', 'minWidth': '100px', 'maxWidth': '200px'},
+                        style_header={'fontWeight': 'bold', 'backgroundColor': '#f8f9fa'},
+                        page_size=10,
+                        sort_action='native',
+                        filter_action='native',
+                    )
+                ]
+            )
+        ]),
+    ])
 ])
 
 # Callback to update referee dropdown based on selected events
@@ -378,9 +424,9 @@ def update_referee_options(selected_events):
     filtered_df = df[df['EventName'].isin(selected_events)]
     return [{'label': name, 'value': name} for name in sorted(filtered_df['RefereeName'].unique())]
 
-# Callback to update table based on filters
+# Callback to update both tables based on filters
 @app.callback(
-    Output('stats-table', 'data'),
+    [Output('stats-table', 'data'), Output('raw-data-table', 'data')],
     [
         Input('referee-filter', 'value'),
         Input('event-filter', 'value'),
@@ -388,7 +434,7 @@ def update_referee_options(selected_events):
         Input('belt-filter', 'value')
     ]
 )
-def update_table(referee, event, category, belt):
+def update_tables(referee, event, category, belt):
     # Start with full df
     filtered_df = df.copy()
     
@@ -404,7 +450,7 @@ def update_table(referee, event, category, belt):
     
     # Compute stats_df based on filtered data
     if filtered_df.empty:
-        return []
+        return [], []
     
     stats_df = filtered_df.groupby(['RefereeName', 'EventName', 'Event_Category']).apply(compute_stats, include_groups=False).reset_index()
     
@@ -413,7 +459,11 @@ def update_table(referee, event, category, belt):
     stats_df[numeric_cols] = stats_df[numeric_cols].round(3)
     stats_df[numeric_cols] = stats_df[numeric_cols].fillna('-')  # Replace NaN with '-'
     
-    return stats_df.to_dict('records')
+    # Select columns for raw data table
+    raw_data_cols = [col['id'] for col in raw_data_columns]
+    raw_data = filtered_df[raw_data_cols].copy()
+    
+    return stats_df.to_dict('records'), raw_data.to_dict('records')
 
 if __name__ == '__main__':
     app.run(debug=True)
