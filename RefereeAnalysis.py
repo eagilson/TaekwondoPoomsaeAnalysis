@@ -292,14 +292,6 @@ def compute_stats(group):
         stats['Correlation'] = np.nan
     return pd.Series(stats)
 
-# Group by RefereeName, EventName, Event_Category
-stats_df = df.groupby(['RefereeName', 'EventName', 'Event_Category']).apply(compute_stats, include_groups=False).reset_index()
-
-# Round numeric columns for display to 3 decimal places
-numeric_cols = ['Correlation', 'Presentation_Diff_SD', 'Accuracy_Diff_SD', 'Presentation_Diff_Mean', 'Accuracy_Diff_Mean']
-stats_df[numeric_cols] = stats_df[numeric_cols].round(3)
-stats_df[numeric_cols] = stats_df[numeric_cols].fillna('-')  # Replace NaN with '-'
-
 # Initialize Dash app
 app = dash.Dash(__name__)
 
@@ -363,7 +355,7 @@ app.layout = html.Div([
                     {'name': 'Presentation Diff Mean', 'id': 'Presentation_Diff_Mean'},
                     {'name': 'Accuracy Diff Mean', 'id': 'Accuracy_Diff_Mean'},
                 ],
-                data=stats_df.to_dict('records'),
+                data=[],
                 style_table={'overflowX': 'auto'},
                 style_cell={'textAlign': 'left', 'padding': '5px', 'minWidth': '100px', 'maxWidth': '200px'},
                 style_header={'fontWeight': 'bold', 'backgroundColor': '#f8f9fa'},
@@ -397,7 +389,10 @@ def update_referee_options(selected_events):
     ]
 )
 def update_table(referee, event, category, belt):
-    filtered_df = stats_df
+    # Start with full df
+    filtered_df = df.copy()
+    
+    # Apply filters
     if referee:
         filtered_df = filtered_df[filtered_df['RefereeName'].isin(referee)]
     if event:
@@ -405,15 +400,20 @@ def update_table(referee, event, category, belt):
     if category:
         filtered_df = filtered_df[filtered_df['Event_Category'] == category]
     if belt:
-        # Filter df by Belt and get unique combinations of RefereeName, EventName, Event_Category
-        belt_filtered_df = df[df['Belt'].isin(belt)][['RefereeName', 'EventName', 'Event_Category']].drop_duplicates()
-        # Filter stats_df to only include rows matching the filtered combinations
-        filtered_df = filtered_df.merge(
-            belt_filtered_df,
-            on=['RefereeName', 'EventName', 'Event_Category'],
-            how='inner'
-        )
-    return filtered_df.to_dict('records')
+        filtered_df = filtered_df[filtered_df['Belt'].isin(belt)]
+    
+    # Compute stats_df based on filtered data
+    if filtered_df.empty:
+        return []
+    
+    stats_df = filtered_df.groupby(['RefereeName', 'EventName', 'Event_Category']).apply(compute_stats, include_groups=False).reset_index()
+    
+    # Round numeric columns for display to 3 decimal places
+    numeric_cols = ['Correlation', 'Presentation_Diff_SD', 'Accuracy_Diff_SD', 'Presentation_Diff_Mean', 'Accuracy_Diff_Mean']
+    stats_df[numeric_cols] = stats_df[numeric_cols].round(3)
+    stats_df[numeric_cols] = stats_df[numeric_cols].fillna('-')  # Replace NaN with '-'
+    
+    return stats_df.to_dict('records')
 
 if __name__ == '__main__':
     app.run(debug=True)

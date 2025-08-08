@@ -177,14 +177,17 @@ FROM
     RefereeAssignment REF,
 	PoomsaeScores P
 	LEFT OUTER JOIN SEMatchList SE
-		ON SE.Gender = P.Gender
+		ON SE.DatabaseID = P.DatabaseID
+			AND	SE.Gender = P.Gender
 			AND SE.Division = P.Division
 			AND P.Category = SE.Category
 			AND SE.Round = P.RoundName
-			AND (SE.MatchRef = P.OrderOfPerform
-				OR (SE.MatchRef = POWER(2,7-(P.RoundName)-9) + 1 - P.OrderOfPerform
-					AND POWER(2,7-(P.RoundName)-9) + 1 - P.OrderOfPerform < P.OrderOfPerform
-					)
+			AND ((SE.Round >= 9 --Single Elimination
+				AND ( 
+					P.OrderOfPerform = POWER(2,6-(P.RoundName-9)) + SE.MatchRef --1/2 of round 2^7=128
+					OR P.OrderOfPerform = POWER(2,6-(P.RoundName-9)) + 1 - SE.MatchRef
+					))
+				OR SE.Round < 9 --CutOff
 				)
 WHERE
     E.DatabaseID = P.DatabaseID
