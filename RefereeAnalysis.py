@@ -186,35 +186,31 @@ df = df.merge(placement_df, on=['EventName', 'Division', 'Gender', 'Category', '
 def normalize_ranks(group):
     # Check Round_ID for the group
     round_id = group['Round_ID'].iloc[0]
+    group['Placement_Normalized'] = group['Placement'].copy()
+    group['Referee_Placement_Normalized'] = group['Referee_Placement'].copy()
     if round_id >= 9:
         # For single-elimination rounds, use rank - 1
-        group['Placement'] = group['Placement'] - 1
-        group['Referee_Placement'] = group['Referee_Placement'] - 1
+        group['Placement_Normalized'] = group['Placement'] - 1
+        group['Referee_Placement_Normalized'] = group['Referee_Placement'] - 1
     else:
         # For non-single-elimination rounds, use (rank - 1) / (n - 1)
         n = group['Performance_ID'].nunique()
         if n > 1:
-            group['Placement'] = (group['Placement'] - 1) / (n - 1)
-            group['Referee_Placement'] = (group['Referee_Placement'] - 1) / (n - 1)
+            group['Placement_Normalized'] = (group['Placement'] - 1) / (n - 1)
+            group['Referee_Placement_Normalized'] = (group['Referee_Placement'] - 1) / (n - 1)
         else:
             # If n=1, set to 0 (highest rank)
-            group['Placement'] = 0
-            group['Referee_Placement'] = 0
-    return group[['Performance_ID', 'Placement', 'Referee_Placement']]
+            group['Placement_Normalized'] = 0
+            group['Referee_Placement_Normalized'] = 0
+    return group[['Performance_ID', 'Placement_Normalized', 'Referee_Placement_Normalized']]
 
 # Apply normalization within each group
 normalized_df = df.groupby(['EventName', 'Division', 'Gender', 'Category', 'Round', 'RefereeName']).apply(normalize_ranks, include_groups=False).reset_index()
 
 # Merge normalized placements back to df
-df = df.merge(normalized_df[['EventName', 'Division', 'Gender', 'Category', 'Round', 'RefereeName', 'Performance_ID', 'Placement', 'Referee_Placement']], 
+df = df.merge(normalized_df[['EventName', 'Division', 'Gender', 'Category', 'Round', 'RefereeName', 'Performance_ID', 'Placement_Normalized', 'Referee_Placement_Normalized']], 
               on=['EventName', 'Division', 'Gender', 'Category', 'Round', 'RefereeName', 'Performance_ID'], 
-              how='left', 
-              suffixes=('', '_new'))
-
-# Update Placement and Referee_Placement with normalized values
-df['Placement'] = df['Placement_new']
-df['Referee_Placement'] = df['Referee_Placement_new']
-df = df.drop(columns=['Placement_new', 'Referee_Placement_new'])
+              how='left')
 
 # Compute difference columns for Accuracy and Presentation, with validation
 for form in forms:
@@ -285,9 +281,9 @@ def compute_stats(group):
         'Accuracy_Diff_Mean': acc_diffs.mean() if not acc_diffs.empty else np.nan,
     }
     # Compute correlation between normalized referee placement and placement
-    valid_rows = group[['Referee_Placement', 'Placement']].dropna()
-    if len(valid_rows) > 1 and valid_rows['Referee_Placement'].std() > 0 and valid_rows['Placement'].std() > 0:
-        stats['Correlation'] = valid_rows['Referee_Placement'].corr(valid_rows['Placement'])
+    valid_rows = group[['Referee_Placement_Normalized', 'Placement_Normalized']].dropna()
+    if len(valid_rows) > 1 and valid_rows['Referee_Placement_Normalized'].std() > 0 and valid_rows['Placement_Normalized'].std() > 0:
+        stats['Correlation'] = valid_rows['Referee_Placement_Normalized'].corr(valid_rows['Placement_Normalized'])
     else:
         stats['Correlation'] = np.nan
     return pd.Series(stats)
@@ -303,7 +299,6 @@ raw_data_columns = [
     {'name': 'Gender', 'id': 'Gender'},
     {'name': 'Category', 'id': 'Category'},
     {'name': 'Round', 'id': 'Round'},
-    #{'name': 'Match Number', 'id': 'MatchNo'},
     {'name': 'Performance ID', 'id': 'Performance_ID'},
     {'name': 'Accuracy A', 'id': 'Accuracy_A'},
     {'name': 'Presentation A', 'id': 'Presentation_A'},
@@ -311,7 +306,7 @@ raw_data_columns = [
     {'name': 'Presentation B', 'id': 'Presentation_B'},
     {'name': 'Accuracy T', 'id': 'Accuracy_T'},
     {'name': 'Presentation T', 'id': 'Presentation_T'},
-    {'name': 'Referee Score', 'id': 'Referee_Score'},
+    #{'name': 'Referee Score', 'id': 'Referee_Score'},
     {'name': 'Referee Placement', 'id': 'Referee_Placement'},
     {'name': 'Official Placement', 'id': 'Placement'},
 ]
@@ -391,7 +386,7 @@ app.layout = html.Div([
                 ]
             )
         ]),
-        dcc.Tab(label='Raw Data', children=[
+        dcc.Tab(label='Score Detail', children=[
             dcc.Loading(
                 id="loading-raw",
                 type="circle",
