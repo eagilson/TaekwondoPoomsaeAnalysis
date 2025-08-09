@@ -299,6 +299,7 @@ raw_data_columns = [
     {'name': 'Gender', 'id': 'Gender'},
     {'name': 'Category', 'id': 'Category'},
     {'name': 'Round', 'id': 'Round'},
+    {'name': 'Match Number', 'id': 'MatchNo'},
     {'name': 'Performance ID', 'id': 'Performance_ID'},
     {'name': 'Accuracy A', 'id': 'Accuracy_A'},
     {'name': 'Presentation A', 'id': 'Presentation_A'},

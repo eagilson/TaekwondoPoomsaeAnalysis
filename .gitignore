@@ -9,6 +9,8 @@ PoomsaeProConnector/__pycache__
 /LaTeX/**/*.log
 /LaTeX/**/*.pdf
 /LaTeX/**/*.gz
+/LaTeX/**/*.fls
+/LaTeX/**/*.fdb_latexmk
 
 #Event Data
 #No event data is permitted on the GitHub for the project
