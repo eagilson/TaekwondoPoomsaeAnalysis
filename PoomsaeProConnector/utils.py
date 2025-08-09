@@ -1,6 +1,14 @@
-def worksheet_exists(file_path, sheet_name):
-    """Function to determine if a worksheet exists"""
-
+def worksheet_exists(file_path: str, sheet_name: str) -> bool:
+    """
+    Function to determine if a worksheet exists.
+    
+    Args:
+        file_path (str): The path to the .xlsx file, including the file name.
+        sheet_name (str): The sheet name to check in the file_path file.
+        
+    Returns:
+        sheet_exists (bool): True if the sheet exists in the file. False if there is any error.
+    """
     from pathlib import Path
     import pandas as pd
 

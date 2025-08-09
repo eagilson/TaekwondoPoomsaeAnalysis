@@ -1,5 +1,15 @@
 # Load data from SQLite
-def load_data(db_path, sql_file_path):
+def load_data(db_path: str, sql_file_path: str):
+    """
+    Loads the data from the PoomsaePro composite database using a SQL string.
+    
+    Args:
+        db_path (str): Path to the .db file, including the file name.
+        sql_file_path (str): Path to the .sql file for extracting data, including the file name.
+        
+    Returns:
+        df (Pandas dataframe): The data to process.
+    """
     import sqlite3
     from pathlib import Path
     import pandas as pd
@@ -26,7 +36,16 @@ def load_data(db_path, sql_file_path):
 
 
 # Categorize event
-def categorize_event(event):
+def categorize_event(event: str) -> str:
+    """
+    Categorize a division name into its event type.
+    
+    Args:
+        event (str): The division name.
+        
+    Returns:
+        event type (str): Type of Poomsae event: Recognized, Freestyle, Mixed, Para, Demo.
+    """
     match event.lower():
         case str(s) if 'freestyle' in s:
             return 'Freestyle'
@@ -39,15 +58,15 @@ def categorize_event(event):
         case _:
             return 'Recognized'
     
-def categorize_division(division):
+def categorize_division(division: str) -> str:
     """
-    Categorize a division name into 'Pair & Team' or 'Individual'.
+    Categorize a division name into 'Pair', 'Team' or 'Individual'.
     
     Args:
         division (str): The division name (e.g., 'Pair Senior', 'Team Junior', 'Individual Open').
         
     Returns:
-        str: 'Pair & Team' if division contains 'Pair' or 'Team' (case-insensitive), else 'Individual'.
+        str: 'Pair' if division contains 'Pair', 'Team' if the division contains 'Team' (case-insensitive), else 'Individual'.
     """
     if not isinstance(division, str):
         return 'Individual'
@@ -59,7 +78,16 @@ def categorize_division(division):
         case _:
             return 'Individual'
         
-def categorize_belt(category):
+def categorize_belt(category: str) -> str:
+    """
+    Extracts the belt component of a Category name from Poomsae Pro.
+    
+    Args:
+        category (str): The Poomsae Category.
+        
+    Returns:
+        belt (str): The Belt color: Yellow, Green, Blue, Red, Black.
+    """
     match category.lower():
         case str(s) if 'yellow' in s:
             return 'Yellow'
@@ -72,7 +100,17 @@ def categorize_belt(category):
         case _:
             return 'Black'
         
-def extract_age(text):
+def extract_age(text: str) -> str:
+    """
+    Extracts the age component of a Poomsae Division name from Poomsae Pro.
+    
+    Args:
+        text (str): The division name.
+        
+    Returns:
+        age (str): Age component of a division name. (e.g. Cadet, Junior, Under 30, etc.)
+    """
+
     # Find positions of hyphen and [
     hyphen_pos = text.find('-')
     bracket_pos = text.find('[')

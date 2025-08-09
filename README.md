@@ -8,6 +8,28 @@ No event data is included in the Git repository. User can only utilize this repo
 
 The project assumes all the data is in a folder labeled data located in the root directory. The data folder contains a file called EVENTS.JSON detailing all events.
 
+# Referee Analysis
+
+There are 3 dashboards to analyze referee performance.
+
+## Referee Analysis
+
+Running RefereeAnalysis.py generates a dashboard to examine individual referee's scoring. The dashboard has three tabs. 
+
+**Referee Scoring Performance Dashboard** provides summary statistics for each referee aggregated at the event level.
+
+**Score Detail** provides the score details used to compute the summary statistics.
+
+**Score Difference Box Plots** graphs the box plots for the Accuracy and Presentation score differences.
+
+## Single Elimination Consistency 
+
+Running SingleEliminationConsistency.py generates a dashboard that provides the level of agreement between referees for Single Elimination rounds.
+
+## Chung Sequential Advantage
+
+Running ChungSequentialAdvantage.py generates a dashabord that evaluate if Chung has an advantage in Single Elimination Random Draw rounds contested sequentially instead of simultaneously. 
+
 # Scoring Systems
 
 Each Poomsae Scoring System utilized different database structures.  A separate connector to unify the data for analysis is required. 
