@@ -4,6 +4,7 @@ from dash import dcc, html, dash_table
 from dash.dependencies import Input, Output
 from utils import load_data, categorize_event, categorize_belt
 import numpy as np
+import plotly.graph_objects as go
 import logging
 
 # Set up logging
@@ -35,7 +36,7 @@ for form in forms:
 expected_columns.extend([
     'Placement', 'Round_ID', 'OrderOfPerform', 'EventName', 'Division',
     'Gender', 'Category', 'Round', 'RefereeName', 'Performance_ID',
-    'FormName_A', 'FormName_B', 'FormName_T', 'ScoreSource'
+    'FormName_A', 'FormName_B', 'FormName_T', 'ScoreSource', 'MatchNo'
 ])
 
 # Check for missing columns
@@ -286,7 +287,7 @@ def compute_stats(group):
         stats['Correlation'] = valid_rows['Referee_Placement_Normalized'].corr(valid_rows['Placement_Normalized'])
     else:
         stats['Correlation'] = np.nan
-    return pd.Series(stats)
+    return pd.Series(stats), acc_diffs, pre_diffs
 
 # Initialize Dash app
 app = dash.Dash(__name__)
@@ -307,7 +308,6 @@ raw_data_columns = [
     {'name': 'Presentation B', 'id': 'Presentation_B'},
     {'name': 'Accuracy T', 'id': 'Accuracy_T'},
     {'name': 'Presentation T', 'id': 'Presentation_T'},
-    #{'name': 'Referee Score', 'id': 'Referee_Score'},
     {'name': 'Referee Placement', 'id': 'Referee_Placement'},
     {'name': 'Official Placement', 'id': 'Placement'},
 ]
@@ -406,6 +406,18 @@ app.layout = html.Div([
                 ]
             )
         ]),
+        dcc.Tab(label='Score Difference Box Plots', children=[
+            dcc.Loading(
+                id="loading-histograms",
+                type="circle",
+                children=[
+                    html.Div([
+                        dcc.Graph(id='acc-diff-boxplot', style={'width': '50%', 'padding': '10px'}),
+                        dcc.Graph(id='pre-diff-boxplot', style={'width': '50%', 'padding': '10px'})
+                    ], style={'display': 'flex', 'flexWrap': 'nowrap', 'justifyContent': 'space-between', 'width': '100%'})
+                ]
+            )
+        ])
     ])
 ])
 
@@ -420,9 +432,14 @@ def update_referee_options(selected_events):
     filtered_df = df[df['EventName'].isin(selected_events)]
     return [{'label': name, 'value': name} for name in sorted(filtered_df['RefereeName'].unique())]
 
-# Callback to update both tables based on filters
+# Callback to update tables and box plots based on filters
 @app.callback(
-    [Output('stats-table', 'data'), Output('raw-data-table', 'data')],
+    [
+        Output('stats-table', 'data'),
+        Output('raw-data-table', 'data'),
+        Output('acc-diff-boxplot', 'figure'),
+        Output('pre-diff-boxplot', 'figure')
+    ],
     [
         Input('referee-filter', 'value'),
         Input('event-filter', 'value'),
@@ -430,7 +447,7 @@ def update_referee_options(selected_events):
         Input('belt-filter', 'value')
     ]
 )
-def update_tables(referee, event, category, belt):
+def update_tables_and_boxplots(referee, event, category, belt):
     # Start with full df
     filtered_df = df.copy()
     
@@ -446,20 +463,80 @@ def update_tables(referee, event, category, belt):
     
     # Compute stats_df based on filtered data
     if filtered_df.empty:
-        return [], []
+        return [], [], {'data': [], 'layout': {}}, {'data': [], 'layout': {}}
     
-    stats_df = filtered_df.groupby(['RefereeName', 'EventName', 'Event_Category']).apply(compute_stats, include_groups=False).reset_index()
+    # Collect all acc_diffs and pre_diffs across groups
+    all_acc_diffs = []
+    all_pre_diffs = []
+    stats_df = filtered_df.groupby(['RefereeName', 'EventName', 'Event_Category']).apply(
+        lambda g: compute_stats(g)[0], include_groups=False
+    ).reset_index()
+    
+    # Collect differences for box plots
+    for _, group in filtered_df.groupby(['RefereeName', 'EventName', 'Event_Category']):
+        _, acc_diffs, pre_diffs = compute_stats(group)
+        if not acc_diffs.empty:
+            all_acc_diffs.extend(acc_diffs)
+        if not pre_diffs.empty:
+            all_pre_diffs.extend(pre_diffs)
+    
+    all_acc_diffs = pd.Series(all_acc_diffs)
+    all_pre_diffs = pd.Series(all_pre_diffs)
     
     # Round numeric columns for display to 3 decimal places
     numeric_cols = ['Correlation', 'Presentation_Diff_SD', 'Accuracy_Diff_SD', 'Presentation_Diff_Mean', 'Accuracy_Diff_Mean']
     stats_df[numeric_cols] = stats_df[numeric_cols].round(3)
-    stats_df[numeric_cols] = stats_df[numeric_cols].fillna('-')  # Replace NaN with '-'
+    stats_df[numeric_cols] = stats_df[numeric_cols].fillna('-')
     
     # Select columns for raw data table
     raw_data_cols = [col['id'] for col in raw_data_columns]
     raw_data = filtered_df[raw_data_cols].copy()
     
-    return stats_df.to_dict('records'), raw_data.to_dict('records')
+    # Create Plotly box plots
+    acc_diff_boxplot = {
+        'data': [{
+            'type': 'box',
+            'y': all_acc_diffs.dropna().tolist(),
+            'name': 'Accuracy Difference',
+            'marker': {'color': '#1f77b4'},
+            'notched':True,
+            'boxpoints': 'outliers',
+            'jitter': 0.3,
+            'pointpos': 0
+        }],
+        'layout': {
+            'title': {'text': 'Box Plot of Accuracy Differences'},
+            'yaxis': {'title': 'Accuracy Difference'},
+            'xaxis': {'showticklabels': False},
+            'showlegend': False
+        }
+    }
+    
+    pre_diff_boxplot = {
+        'data': [{
+            'type': 'box',
+            'y': all_pre_diffs.dropna().tolist(),
+            'name': 'Presentation Difference',
+            'marker': {'color': '#ff7f0e'},
+            'notched':True,
+            'boxpoints': 'outliers',
+            'jitter': 0.3,
+            'pointpos': 0
+        }],
+        'layout': {
+            'title': {'text': 'Box Plot of Presentation Differences'},
+            'yaxis': {'title': 'Presentation Difference'},
+            'xaxis': {'showticklabels': False},
+            'showlegend': False
+        }
+    }
+    
+    return (
+        stats_df.to_dict('records'),
+        raw_data.to_dict('records'),
+        acc_diff_boxplot,
+        pre_diff_boxplot
+    )
 
 if __name__ == '__main__':
     app.run(debug=True)
