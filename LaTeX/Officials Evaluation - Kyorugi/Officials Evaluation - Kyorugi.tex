@@ -1,0 +1,131 @@
+\documentclass[10pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\geometry{letterpaper, margin=0.075\textwidth, footskip=0.05\textwidth}
+\usepackage{booktabs}
+\usepackage{fancyhdr}
+\usepackage{array}
+\usepackage{graphicx}
+\usepackage{multirow}
+\usepackage{enumitem}
+\usepackage{colortbl} % For colored table cells
+\usepackage{xcolor} % For color definitions
+\usepackage[style=iso]{datetime2}
+
+\setlist[itemize]{leftmargin=*, labelsep=3mm}
+
+% Define custom column types for centered content (vertically and horizontally)
+\newcolumntype{C}[1]{>{\centering\arraybackslash}m{#1}}
+% Define column type for vertically centered text (no horizontal centering)
+\newcolumntype{M}[1]{>{\arraybackslash}m{#1}}
+
+\definecolor{black}{RGB}{0,0,0}
+\definecolor{lightgray}{gray}{0.9} % Light gray for alternating rows
+
+\pagestyle{fancy}
+\renewcommand{\headrulewidth}{0pt}
+
+\rfoot{
+	\tiny
+	Version \today
+}
+
+\begin{document}
+
+% Header with image and title
+\begin{minipage}{0.2\textwidth}
+    % Comment out or replace with correct path if logo.jpg is available
+    % \includegraphics[width=0.9\textwidth]{logo.jpg}
+    \includegraphics[height=3cm]{Image/logo.jpg}
+\end{minipage}
+\begin{minipage}{0.75\textwidth}
+    \begin{center}
+        \textbf{\Huge Kyurogi Referee Evaluation}
+    \end{center}
+    
+    % Personal Information
+    \begin{tabular}{p{0.25\textwidth} p{0.65\textwidth}}
+        \textbf{Name:} & \hrulefill \\
+        \textbf{Current Rank:} & \hrulefill \\
+        \textbf{Event:} & \hrulefill \\
+        \textbf{Evaluator:} & \hrulefill \\
+    \end{tabular}
+\end{minipage}
+
+\begin{center}
+    % Match Details
+    \textbf{Division:} World Class / Black Belt / Color Belt 
+    \hfill \textbf{Round:} Final / Semi Final / Other
+    \hfill \textbf{Match Difficulty (1-5):} \underline{\hspace{0.05\textwidth}}
+
+    \vspace{0.02\textwidth}
+
+    % Scoring Section with increased row height
+    %\setlength\extrarowheight{3pt}
+
+    % Scoring Section
+    \begin{tabular}{|M{0.85\textwidth}|C{0.10\textwidth}|}
+        \hline
+        \textbf{\Large Criteria} & \textbf{Score (1-5 or N/A)} \\ \hline
+        \textbf{General Referee Skills} & \cellcolor{black} \\ \hline
+        \rowcolor{lightgray}Timeliness in the ring & \\ \hline
+        Good team member & \\ \hline
+        \rowcolor{lightgray}Application of weigh in procedures & \\ \hline
+        Application of inspection procedures & \\ \hline
+        \rowcolor{lightgray}Ring movement/mobility \& position & \\ \hline
+        
+        \textbf{Corner Judge} & \cellcolor{black} \\ \hline
+        \rowcolor{lightgray}Marching into the ring & \\ \hline
+        Posture while sitting & \\ \hline
+        \rowcolor{lightgray}Consistency in scoring technical points & \\ \hline
+        Consistency in scoring punches & \\ \hline
+        \rowcolor{lightgray}Standing and using proper hand signals & \\ \hline
+
+        \textbf{Referee} & \cellcolor{black} \\ \hline
+        \rowcolor{lightgray}Starting the match & \\ \hline
+        Proper distance from competitors & \\ \hline
+        \rowcolor{lightgray}Proper \& timely use of hand signals & \\ \hline
+        Proper application of penalties & \\ \hline
+        \rowcolor{lightgray}Handling of medical situations & \\ \hline
+        Handling of knockdowns \& knockouts & \\ \hline
+        \rowcolor{lightgray}Clock - starting/stopping & \\ \hline
+        Video review process & \\ \hline
+        \rowcolor{lightgray} Handling of judge conferences& \\ \hline
+        Ending match & \\ \hline
+        \rowcolor{lightgray}Woosekirok & \\ \hline
+        Yellow Card & \\ \hline
+
+        \textbf{Ring Captain} & \cellcolor{black} \\ \hline
+        \rowcolor{lightgray}Managing of team \& assignments & \\ \hline
+        Proper completion of paperwork& \\ \hline
+        \rowcolor{lightgray}Monitoring of computer operator \& scoreboard& \\ \hline
+        Operating of the ring in a timely fashion& \\ \hline
+        \rowcolor{lightgray}Feedback to the team for opportunties & \\ \hline
+
+        \textbf{Video Review} & \cellcolor{black} \\ \hline
+        \rowcolor{lightgray}Completion of review within 30 seconds& \\ \hline
+        Proper interpretation \& decisions made & \\ \hline
+
+        \textbf{Computer Operator} & \cellcolor{black} \\ \hline
+        \rowcolor{lightgray}Operational knowledge \& proficiency& \\ \hline
+        Problem solving & \\ \hline
+
+        \textbf{Technical Assistant} & \cellcolor{black} \\ \hline
+        \rowcolor{lightgray}Knowledge of Scoreboard	Match \& Score Awareness During Match & \\ \hline
+        TA Sheet Completion & \\ \hline
+    \end{tabular}
+
+    \vspace{.02\textwidth}
+
+    % Comments & Opportunities Box
+    \fbox{
+        \begin{minipage}{0.95\textwidth}
+            \textbf{Comments \& Opportunities:}\vspace{0.05cm} \\
+            \hrulefill \vspace{0.05cm} \\
+            \hrulefill \vspace{0.05cm} \\
+            \hrulefill \vspace{0.05cm} \\
+            \hrulefill \vspace{0.05cm} \\
+        \end{minipage}%
+    }
+\end{center}
+\end{document}
