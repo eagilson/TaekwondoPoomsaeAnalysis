@@ -8,6 +8,11 @@ No event data is included in the Git repository. User can only utilize this repo
 
 The project assumes all the data is in a folder labeled data located in the root directory. The data folder contains a file called EVENTS.JSON detailing all events.
 
+# Technology Dependencies
+Python
+SQLlite
+LaTeX
+
 # Referee Analysis
 
 There are 3 dashboards to analyze referee performance.
@@ -16,11 +21,9 @@ There are 3 dashboards to analyze referee performance.
 
 Running RefereeAnalysis.py generates a dashboard to examine individual referee's scoring. The dashboard has three tabs. 
 
-**Referee Scoring Performance Dashboard** provides summary statistics for each referee aggregated at the event level.
-
-**Score Detail** provides the score details used to compute the summary statistics.
-
-**Score Difference Box Plots** graphs the box plots for the Accuracy and Presentation score differences.
+1. **Referee Scoring Performance Dashboard** provides summary statistics for each referee aggregated at the event level.
+2. **Score Detail** provides the score details used to compute the summary statistics.
+3. **Score Difference Box Plots** graphs the box plots for the Accuracy and Presentation score differences.
 
 ## Single Elimination Consistency 
 
