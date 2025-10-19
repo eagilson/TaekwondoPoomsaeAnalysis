@@ -1,5 +1,7 @@
+import pandas as pd
+
 # Load data from SQLite
-def load_data(db_path: str, sql_file_path: str):
+def load_data(db_path: str, sql_file_path: str) -> pd.DataFrame:
     """
     Loads the data from the PoomsaePro composite database using a SQL string.
     
@@ -12,7 +14,6 @@ def load_data(db_path: str, sql_file_path: str):
     """
     import sqlite3
     from pathlib import Path
-    import pandas as pd
 
     if not Path(db_path).exists():
         print(f"Error: Database '{db_path}' not found.")
@@ -52,6 +53,20 @@ def categorize_event(event: str) -> str:
         case str(s) if 'demo' in s:
             return 'Demo'
         case str(s) if 'para' in s:
+            return 'Para'
+        case str(s) if 'p10' in s:
+            return 'Para'
+        case str(s) if 'p20' in s:
+            return 'Para'
+        case str(s) if 'p30' in s:
+            return 'Para'
+        case str(s) if 'p40' in s:
+            return 'Para'
+        case str(s) if 'p50' in s:
+            return 'Para'
+        case str(s) if 'p60' in s:
+            return 'Para'
+        case str(s) if 'p70' in s:
             return 'Para'
         case str(s) if 'mixed' in s:
             return 'Mixed'

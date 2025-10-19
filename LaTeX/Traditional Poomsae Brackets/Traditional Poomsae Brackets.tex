@@ -1,0 +1,187 @@
+% Setting up the document class for standard letter paper in landscape orientation
+\documentclass{article}
+\usepackage{geometry}
+\geometry{
+	landscape,
+	letterpaper,
+	margin=.5cm,
+	includehead,
+	headheight=3.2cm % Accommodates 3cm logo and text
+}
+\usepackage{graphicx}
+\usepackage{fancyhdr} % For headers and footers
+
+% Configuring header style
+\pagestyle{fancy}
+\renewcommand{\headrulewidth}{0pt} % Remove line below header
+% Including TikZ for creating the tournament bracket
+\usepackage{tikz}
+
+% Defining number sequences for different n values (original order)
+\def\seqN{{
+  {1,4,3,2}, % n=1
+  {1,8,5,4,3,6,7,2}, % n=2
+  {1,16,9,8,5,12,13,4,3,14,11,6,7,10,15,2}, % n=3
+  {1,32,17,16,9,24,25,8,5,28,21,12,13,20,29,4,3,30,19,14,11,22,27,6,7,26,23,10,15,18,31,2} % n=4
+}}
+
+% Defining the tournament style as a reusable TikZ pic
+\tikzset{pics/tournament/.style={code={
+    % Retrieving key values for the tournament style
+    \def\pv##1{\pgfkeysvalueof{/tikz/tournament/##1}}
+    % Applying provided key-value pairs for the tournament
+    \tikzset{tournament/.cd,#1}
+    % Calculating index for sequence array (n-1 since sequences are 0-indexed in LaTeX)
+    \pgfmathtruncatemacro{\seqIndex}{\pv{n}-1}
+    % Getting the sequence for the current n
+    \def\currentSeq{\seqN[\seqIndex]}
+    % Looping over rounds from n down to 0
+    \foreach \XX [remember=\XX as \LastXX] in {\pv{n},...,0}
+       {
+        % Calculating the number of matches in the current round
+        \pgfmathtruncatemacro{\mym}{pow(2,\XX)}
+        % Checking if this is the initial round
+        \ifnum\XX=\pv{n}
+            % Drawing initial match lines with sequence numbers
+            \foreach \YY in {1,...,\mym}
+                 {
+                    % Calculating sequence indices for top and bottom lines (top-to-bottom order)
+                    \pgfmathtruncatemacro{\topSeqNum}{\currentSeq[2*(\mym-\YY)]}
+                    \pgfmathtruncatemacro{\botSeqNum}{\currentSeq[2*(\mym-\YY)+1]}
+                    % Drawing the top line and adding sequence number
+                    \draw[blue] (-\XX*\pv{d},{(\YY-\mym/2-1/2)*\pv{l}})
+                    -- ++ (\pv{d},0);
+                    \node[anchor=east] at (-\XX*\pv{d},{(\YY-\mym/2-1/2)*\pv{l}}) {\topSeqNum};
+                    % Drawing the bottom line and adding sequence number
+                    \draw[red] (-\XX*\pv{d},{(\YY-\mym/2-1)*\pv{l}})
+                    -- ++ (\pv{d},0);
+                    \node[anchor=east] at (-\XX*\pv{d},{(\YY-\mym/2-1)*\pv{l}}) {\botSeqNum};
+                    % Connecting the lines vertically
+                    \draw (-\XX*\pv{d}+\pv{d},{(\YY-\mym/2-1/2)*\pv{l}})
+                    |- coordinate[pos=0.25] (p-\XX-\YY)
+                    (-\XX*\pv{d}+\pv{d},{(\YY-\mym/2-1)*\pv{l}})
+                    ;
+                 }
+        % Drawing lines for subsequent rounds
+        \else
+            \foreach \YY [evaluate=\YY as \ZZ using {int(2*\YY)}] in {1,...,\mym}
+                 {
+                    % Drawing the top line in blue
+                    \draw[blue] (p-\LastXX-\ZZ) -- ++ (\pv{d},0);
+                    % Connecting the lines vertically in black
+                    \draw[black] (p-\LastXX-\ZZ) ++ (\pv{d},0)
+                    |- coordinate[pos=0.25] (p-\XX-\YY)
+                    (p-\LastXX-\the\numexpr\ZZ-1);
+                    % Drawing the bottom line in red
+                    \draw[red] (p-\LastXX-\the\numexpr\ZZ-1) -- ++ (\pv{d},0);
+                 }
+        \fi
+       }
+    % Drawing the final horizontal line
+    \draw (p-0-1) -- ++ (\pv{d},0);
+    % Adding four labeled horizontal lines for names in the bottom right corner
+    \node[align=left, anchor=south east] at (8,-8) {
+        \begin{tabular}{r@{ }l}
+            1) & \rule{5cm}{0.4pt} \\
+            2) & \rule{5cm}{0.4pt} \\
+            3) & \rule{5cm}{0.4pt} \\
+            3) & \rule{5cm}{0.4pt} \\
+        \end{tabular}
+    };
+}},
+% Setting default values for the tournament
+tournament/.cd,n/.initial=2,l/.initial=1,d/.initial=1}
+
+% Starting the document
+\begin{document}
+
+% Header for Round of 32 (n=4)
+\chead{
+    \vbox to 3.2cm{
+        \vfill
+        \begin{center}
+            \textbf{\Huge Traditional Poomsae Round of 32 Bracket}
+        \end{center}
+        \vfill
+    }
+}
+% Comment out or replace with correct path if logo.jpg is available
+\rhead{
+        \vfill
+        \includegraphics[height=3cm]{Image/logo.jpg}
+        \vfill
+    }
+
+% Creating the TikZ picture for the tournament bracket (Round 32, n=4)
+\begin{tikzpicture}
+    % Scaling the tournament to fit the page width and height
+    \begin{scope}[scale=1, transform shape]
+        \pic at (2,3.75) {tournament={n=4,d=4,l=1}};
+    \end{scope}
+\end{tikzpicture}
+
+\newpage
+
+% Header for Round of 16 (n=3)
+\chead{
+    \vbox to 3.2cm{
+        \vfill
+        \begin{center}
+            \textbf{\Huge Traditional Poomsae Round of 16 Bracket}
+        \end{center}
+        \vfill
+    }
+}
+
+% Creating the TikZ picture for the tournament bracket (Round 16, n=3)
+\begin{tikzpicture}
+    % Scaling the tournament to fit the page width and height
+    \begin{scope}[scale=1, transform shape]
+        \pic at (2,3.75) {tournament={n=3,d=5,l=2}};
+    \end{scope}
+\end{tikzpicture}
+
+\newpage
+
+% Header for Round of 8 (n=2)
+\chead{
+    \vbox to 3.2cm{
+        \vfill
+        \begin{center}
+            \textbf{\Huge Traditional Poomsae Round of 8 Bracket}
+        \end{center}
+        \vfill
+    }
+}
+
+% Creating the TikZ picture for the tournament bracket (Round 8, n=2)
+\begin{tikzpicture}
+    % Scaling the tournament to fit the page width and height
+    \begin{scope}[scale=1, transform shape]
+        \pic at (2,3.75) {tournament={n=2,d=6,l=2.5}};
+    \end{scope}
+\end{tikzpicture}
+
+\newpage
+
+% Header for Round of 4 (n=1)
+\chead{
+    \vbox to 3.2cm{
+        \vfill
+        \begin{center}
+            \textbf{\Huge Traditional Poomsae Round of 4 Bracket}
+        \end{center}
+        \vfill
+    }
+}
+
+% Creating the TikZ picture for the tournament bracket (Round 4, n=1)
+\begin{tikzpicture}
+    % Scaling the tournament to fit the page width and height
+    \begin{scope}[scale=1, transform shape]
+        \pic at (2,3.75) {tournament={n=1,d=7,l=3}};
+    \end{scope}
+\end{tikzpicture}
+
+% Ending the document
+\end{document}
