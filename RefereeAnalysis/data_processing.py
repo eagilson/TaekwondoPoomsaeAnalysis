@@ -88,7 +88,7 @@ def singleeliminationgaps(df: pd.DataFrame) -> pd.DataFrame:
     ]
 
     gap_rows = []
-    group_keys = ['EventName', 'Division', 'Gender', 'Category', 'Round', 'RefereeName', 'MatchNo', 'Round_ID']
+    group_keys = ['EventName', 'Division', 'Gender', 'Category', 'Round', 'RefereeName', 'Round_ID']
 
     for group_key, group in se_df.groupby(group_keys):
         if len(group) < 2:
@@ -117,7 +117,6 @@ def singleeliminationgaps(df: pd.DataFrame) -> pd.DataFrame:
             processed.add(i)
             processed.add(row2.name)
 
-            # === NEW FILTER LOGIC ===
             # Keep match if ANY form has both athletes >= 1.5
             keep_match = False
             for form in forms:
@@ -136,12 +135,8 @@ def singleeliminationgaps(df: pd.DataFrame) -> pd.DataFrame:
             # Determine winner/loser for the Poomsae, not overall
             total1 = row1.get(f'Acc_Avg_{form}', np.nan) + row1.get(f'Pre_Avg_{form}', np.nan)
             total2 = row2.get(f'Acc_Avg_{form}', np.nan) + row2.get(f'Pre_Avg_{form}', np.nan)
-            #placement1 = row1.get('Referee_Placement', np.nan)
-            #placement2 = row2.get('Referee_Placement', np.nan)
 
-            #if pd.notna(placement1) and pd.notna(placement2):
             if pd.notna(total1) and pd.notna(total2):
-                #if placement1 == 1 or (placement1 == 1.5 and placement2 == 1.5):
                 if total1 >= total2:
                     winner, loser = row1, row2
                 else:
@@ -182,7 +177,7 @@ def singleeliminationgaps(df: pd.DataFrame) -> pd.DataFrame:
 
     gap_df = pd.DataFrame(gap_rows)
     meta_cols = [
-        'EventName', 'Division', 'Gender', 'Category', 'Round', 'RefereeName', 'MatchNo', 'Round_ID',
+        'EventName', 'Division', 'Gender', 'Category', 'Round', 'RefereeName', 'Round_ID',
         'Performance_ID_Winner', 'Performance_ID_Loser',
         'OrderOfPerform_Winner', 'OrderOfPerform_Loser',
         'Referee_Placement_Winner', 'Referee_Placement_Loser'
