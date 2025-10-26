@@ -8,9 +8,6 @@ db_path = 'PoomsaeProConnector/PoomsaePro.db'
 sql_file_path = 'sql/RefereeFullScore.sql'
 df = build_database(db_path, sql_file_path)
 
-# Initialize Dash app
-app = dash.Dash(__name__)
-
 # Define columns for raw data table
 raw_data_columns = [
     {'name': 'Event Name', 'id': 'EventName'},
@@ -30,6 +27,9 @@ raw_data_columns = [
     {'name': 'Referee Placement', 'id': 'Referee_Placement'},
     {'name': 'Official Placement', 'id': 'Placement'},
 ]
+
+# Initialize Dash app
+app = dash.Dash(__name__)
 
 register_callbacks(app, df, raw_data_columns)
 

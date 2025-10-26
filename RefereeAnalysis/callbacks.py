@@ -1,14 +1,13 @@
 # callbacks.py
 import pandas as pd
-import numpy as np
 from dash.dependencies import Input, Output
-from RefereeAnalysis.data_processing import compute_stats
+from RefereeAnalysis.data_processing import compute_stats, singleeliminationgaps
+from RefereeAnalysis.charts import make_bar_chart, make_box_chart
 
 
 def register_callbacks(app, df: pd.DataFrame, raw_data_columns):
     """Register Dash callbacks for the app."""
 
-    # ── Update referee dropdown based on selected events ──
     @app.callback(
         Output('referee-filter', 'options'),
         Input('event-filter', 'value')
@@ -19,7 +18,6 @@ def register_callbacks(app, df: pd.DataFrame, raw_data_columns):
         filtered_df = df[df['EventName'].isin(selected_events)]
         return [{'label': name, 'value': name} for name in sorted(filtered_df['RefereeName'].unique())]
 
-    # ── Update tables + box plots + bar charts ──
     @app.callback(
         [
             Output('stats-table', 'data'),
@@ -27,7 +25,9 @@ def register_callbacks(app, df: pd.DataFrame, raw_data_columns):
             Output('acc-diff-boxplot', 'figure'),
             Output('pre-diff-boxplot', 'figure'),
             Output('acc-diff-bar', 'figure'),
-            Output('pre-diff-bar', 'figure')
+            Output('pre-diff-bar', 'figure'),
+            Output('se-acc-gap-bar', 'figure'),
+            Output('se-pre-gap-bar', 'figure')
         ],
         [
             Input('referee-filter', 'value'),
@@ -51,9 +51,9 @@ def register_callbacks(app, df: pd.DataFrame, raw_data_columns):
 
         if filtered_df.empty:
             empty_fig = {'data': [], 'layout': {}}
-            return [], [], empty_fig, empty_fig, empty_fig, empty_fig
+            return [], [], empty_fig, empty_fig, empty_fig, empty_fig, empty_fig, empty_fig
 
-        # ── Compute stats & collect differences ──
+        # ── All Rounds: Score Differences ──
         all_acc_diffs = []
         all_pre_diffs = []
         stats_df = filtered_df.groupby(['RefereeName', 'EventName', 'Event_Category']).apply(
@@ -75,64 +75,38 @@ def register_callbacks(app, df: pd.DataFrame, raw_data_columns):
                         'Presentation_Diff_Mean', 'Accuracy_Diff_Mean']
         stats_df[numeric_cols] = stats_df[numeric_cols].round(3).fillna('-')
 
+        # Box & Bar (All Rounds)
+        acc_box = make_box_chart(all_acc_diffs, 'Accuracy Difference Distribution', '#1f77b4')
+        pre_box = make_box_chart(all_pre_diffs, 'Presentation Difference Distribution', '#ff7f0e')
+        acc_bar = make_bar_chart(all_acc_diffs, 'Accuracy Difference Distribution', '#1f77b4')
+        pre_bar = make_bar_chart(all_pre_diffs, 'Presentation Difference Distribution', '#ff7f0e')
+
         # Raw data
         raw_data_cols = [col['id'] for col in raw_data_columns]
         raw_data = filtered_df[raw_data_cols].copy()
 
-        # ── Bar Charts ──
-        def make_bar_chart(data_series, title, color):
-            if data_series.empty:
-                return {'data': [], 'layout': {}}
+        # ── Single Elimination: Aggregate Gaps (A, B, T) ──
+        gap_df = singleeliminationgaps(filtered_df)
 
-            # auto bin resolution
-            hist, bin_edges = np.histogram(data_series.dropna(), bins='auto', density=True)
-            bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+        # Safe extraction: only use columns that exist
+        acc_gap_cols = [col for col in ['Accuracy_A_Gap', 'Accuracy_B_Gap', 'Accuracy_T_Gap'] if col in gap_df.columns]
+        pre_gap_cols = [col for col in ['Presentation_A_Gap', 'Presentation_B_Gap', 'Presentation_T_Gap'] if col in gap_df.columns]
 
-            return {
-                'data': [{
-                    'type': 'bar',
-                    'x': bin_centers,
-                    'y': hist,
-                    'marker': {'color': color},
-                    'hovertemplate': 'Diff: %{x:.3f}<br>Count: %{y}<extra></extra>'
-                }],
-                'layout': {
-                    'title': title,
-                    'xaxis': {'title': 'Score Difference'},
-                    'yaxis': {'title': 'Count'},
-                    'bargap': 0.05
-                }
-            }
+        # Default to empty series if no columns
+        acc_gaps_series = pd.concat([gap_df[col] for col in acc_gap_cols], ignore_index=True) if acc_gap_cols else pd.Series()
+        pre_gaps_series = pd.concat([gap_df[col] for col in pre_gap_cols], ignore_index=True) if pre_gap_cols else pd.Series()
 
-        # ── Box Plots ──
-        def make_box_chart(data_series, title, color):
-            if data_series.empty:
-                return {'data': [], 'layout': {}}
-            
-            return {
-                'data': [{
-                    'type': 'box',
-                    'y': all_pre_diffs.dropna().tolist(),
-                    'name': 'Score Difference',
-                    'marker': {'color': color},
-                    'notched': True,
-                    'boxpoints': 'outliers',
-                    'jitter': 0.3,
-                    'pointpos': 0
-                }],
-                'layout': {
-                    'title': title,
-                    'yaxis': {'title': 'Score Difference'},
-                    'xaxis': {'showticklabels': False},
-                    'showlegend': False
-                    }
-                }
+        se_acc_gap_bar = make_bar_chart(
+            acc_gaps_series,
+            'Single Elimination: Accuracy Gap Distribution',
+            '#1f77b4'
+        )
 
-        acc_box = make_box_chart(all_acc_diffs, 'Accuracy Difference Distribution', '#1f77b4')
-        pre_box = make_box_chart(all_pre_diffs, 'Box Plot of Presentation Differences', '#ff7f0e')
-
-        acc_bar = make_bar_chart(all_acc_diffs, 'Accuracy Difference', '#1f77b4')
-        pre_bar = make_bar_chart(all_pre_diffs, 'Presentation Difference', '#ff7f0e')
+        se_pre_gap_bar = make_bar_chart(
+            pre_gaps_series,
+            'Single Elimination: Presentation Gap Distribution',
+            '#ff7f0e'
+        )
 
         return (
             stats_df.to_dict('records'),
@@ -140,5 +114,7 @@ def register_callbacks(app, df: pd.DataFrame, raw_data_columns):
             acc_box,
             pre_box,
             acc_bar,
-            pre_bar
+            pre_bar,
+            se_acc_gap_bar,
+            se_pre_gap_bar
         )

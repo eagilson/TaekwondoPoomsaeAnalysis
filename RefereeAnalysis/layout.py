@@ -109,29 +109,70 @@ def layout(app, df, raw_data_columns):
 
             # ── Score Difference Box Plots + Bar Charts ──
             dcc.Tab(label='Score Difference Box Plots', children=[
-                dcc.Loading(
-                    id="loading-histograms",
-                    type="circle",
-                    children=[
-                        # ── ROW 1 : Box Plots ──
-                        html.Div([
-                            dcc.Graph(id='acc-diff-boxplot',
-                                      style={'width': '50%', 'padding': '10px'}),
-                            dcc.Graph(id='pre-diff-boxplot',
-                                      style={'width': '50%', 'padding': '10px'})
-                        ], style={'display': 'flex', 'flexWrap': 'nowrap',
-                                  'justifyContent': 'space-between', 'width': '100%'}),
+                html.Div([
+                    html.H3("Distribution of Referee Score Differences from the Final Score", 
+                            style={'textAlign': 'center', 'margin': '20px 0 10px'}),
+                    dcc.Loading(
+                        id="loading-histograms",
+                        type="circle",
+                        children=[
+                            # ── ROW 1 : Box Plots ──
+                            html.Div([
+                                dcc.Graph(
+                                    id='acc-diff-boxplot',
+                                    style={'width': '50%', 'padding': '10px'}
+                                ),
+                                dcc.Graph(
+                                    id='pre-diff-boxplot',
+                                    style={'width': '50%', 'padding': '10px'}
+                                )
+                            ], style={'display': 'flex', 'flexWrap': 'nowrap',
+                                      'justifyContent': 'space-between', 'width': '100%'}),
 
-                        # ── ROW 2 : Bar Charts (Accuracy & Presentation diff) ──
-                        html.Div([
-                            dcc.Graph(id='acc-diff-bar',
-                                      style={'width': '50%', 'padding': '10px'}),
-                            dcc.Graph(id='pre-diff-bar',
-                                      style={'width': '50%', 'padding': '10px'})
-                        ], style={'display': 'flex', 'flexWrap': 'nowrap',
-                                  'justifyContent': 'space-between', 'width': '100%'})
-                    ]
-                )
+                            # ── ROW 2 : Bar Charts ──
+                            html.Div([
+                                dcc.Graph(
+                                    id='acc-diff-bar',
+                                    style={'width': '50%', 'padding': '10px'}
+                                ),
+                                dcc.Graph(
+                                    id='pre-diff-bar',
+                                    style={'width': '50%', 'padding': '10px'}
+                                )
+                            ], style={'display': 'flex', 'flexWrap': 'nowrap',
+                                      'justifyContent': 'space-between', 'width': '100%'})
+                        ]
+                    )
+                ])
+            ]),
+
+            # ── Single Elimination Referee Gaps ──
+            dcc.Tab(label='Single Elimination Referee Gaps', children=[
+                html.Div([
+                    html.H3("Referee Score Gaps Between the Winner & Loser in Single Elimination", 
+                            style={'textAlign': 'center', 'margin': '20px 0 10px'}),
+                    dcc.Loading(
+                        id="loading-se-gaps",
+                        type="circle",
+                        children=[
+                            # ── ROW 1 : Accuracy Gap Distribution per Referee ──
+                            html.Div([
+                                dcc.Graph(
+                                    id='se-acc-gap-bar',
+                                    style={'width': '50%', 'padding': '10px'}
+                                ),
+                            ], style={'display': 'flex', 'justifyContent': 'center', 'width': '100%'}),
+
+                            # ── ROW 2 : Presentation Gap Distribution per Referee ──
+                            html.Div([
+                                dcc.Graph(
+                                    id='se-pre-gap-bar',
+                                    style={'width': '50%', 'padding': '10px'}
+                                ),
+                            ], style={'display': 'flex', 'justifyContent': 'center', 'width': '100%'})
+                        ]
+                    )
+                ])
             ])
         ])
     ])
