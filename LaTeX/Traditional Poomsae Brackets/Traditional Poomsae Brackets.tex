@@ -71,7 +71,7 @@
                     % Connecting the lines vertically in black
                     \draw[black] (p-\LastXX-\ZZ) ++ (\pv{d},0)
                     |- coordinate[pos=0.25] (p-\XX-\YY)
-                    (p-\LastXX-\the\numexpr\ZZ-1);
+                    (p-\LastXX-\the\numexpr\ZZ-1) ++ (\pv{d},0);
                     % Drawing the bottom line in red
                     \draw[red] (p-\LastXX-\the\numexpr\ZZ-1) -- ++ (\pv{d},0);
                  }

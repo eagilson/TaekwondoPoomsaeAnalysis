@@ -3,7 +3,7 @@ import dash
 from dash import dcc, html, dash_table
 from dash.dependencies import Input, Output
 
-from utils import categorize_event, load_data
+from utils.PoomsaeProCleaning import categorize_event, load_data
 
 # Create table data
 def create_table_data(df, competition='All', event='All', referee='All'):

@@ -732,7 +732,7 @@ CREATE TABLE IF NOT EXISTS Schools
 ) WITHOUT ROWID;
 
 --Score Details
-/* CREATE TABLE IF NOT EXISTS ScoreDetails
+/*CREATE TABLE IF NOT EXISTS ScoreDetails
  (
     DatabaseID INTEGER NOT NULL,
 	Performance_ID Integer NOT NULL, 
@@ -788,7 +788,7 @@ CREATE TABLE IF NOT EXISTS Schools
 	J6_TB_AccTech Text, 
 	J6_TB_Pres Text,
     PRIMARY KEY (DatabaseID, Performance_ID)
-) WITHOUT ROWID */
+) WITHOUT ROWID*/
 
 --Single Elimination Match List
 --New in V3c database
@@ -816,8 +816,8 @@ CREATE TABLE IF NOT EXISTS SportSettings
 	Active Boolean NOT NULL, 
 	Rev Text, --New in V3c
 	ProfileName Text, 
-	MaxPoomsaeTIme Integer NOT NULL, 
-	PerformanceTIme Integer, 
+	MaxPoomsaeTime Integer NOT NULL, 
+	PerformanceTime Integer, 
 	MinPoomsaeTime Integer NOT NULL, 
 	RestPeriod Integer NOT NULL, 
 	Num2Semi Integer, 

@@ -16,21 +16,21 @@ df = load_data(db_path, sql_file_path)
 df = df.dropna(subset=['Winner', 'Simultaneous', 'Division', 'EventName'])
 df['Simultaneous'] = df['Simultaneous'].astype(int)  # Ensure 0/1
 
-# Categorize divisions
+# Categorize divisions and filter for Pair & Team
 df['division_category'] = df['Division'].apply(categorize_division)
-df['division_group'] = df['division_category'].apply(lambda x: 'Pair & Team' if x in ['Pair', 'Team'] else 'Individual')
+df = df[df['division_category'].isin(['Pair', 'Team'])]
 
-# Calculate win rates by division group
-def calculate_win_rates_by_division(seq_df):
-    grouped = seq_df.groupby('division_group')
+# Calculate win rates by EventName
+def calculate_win_rates_by_event(seq_df):
+    grouped = seq_df.groupby('EventName')
     results = []
     
-    for division, group in grouped:
+    for event, group in grouped:
         hong_wins = len(group[group['Winner'] == 'Hong'])
         total_matches = len(group)
         win_rate = hong_wins / total_matches if total_matches > 0 else 0
         results.append({
-            'Division Group': division,
+            'EventName': event,
             'Hong Wins': hong_wins,
             'Total Matches': total_matches,
             'Win Rate': win_rate
@@ -50,7 +50,7 @@ app = dash.Dash(__name__)
 
 # Layout with multi-select EventName dropdown
 app.layout = html.Div([
-    html.H1("Hong's Win Rate Analysis in Sequential Taekwondo Poomsae Matches"),
+    html.H1("Hong's Win Rate Analysis in Sequential Taekwondo Poomsae Matches (Pair & Team)"),
     dcc.Dropdown(
         id='event-dropdown',
         options=[{'label': event, 'value': event} for event in sorted(df['EventName'].unique())],
@@ -83,35 +83,34 @@ def update_graph(event_filter):
         filtered_df = filtered_df[filtered_df['EventName'].isin(event_filter)]
     
     # Compute win rates and test results
-    win_rate_df = calculate_win_rates_by_division(filtered_df)
+    win_rate_df = calculate_win_rates_by_event(filtered_df)
     test_results = []
     for _, row in win_rate_df.iterrows():
         _, p_value = binomial_test(row['Hong Wins'], row['Total Matches'])
         test_results.append({
-            'Division Group': row['Division Group'],
+            'EventName': row['EventName'],
             'P-value': p_value,
             'Conclusion': 'Significant difference' if p_value < 0.05 else 'No significant difference'
         })
     test_results_df = pd.DataFrame(test_results)
     
     # Merge results for display
-    display_df = win_rate_df.merge(test_results_df, on='Division Group')
+    display_df = win_rate_df.merge(test_results_df, on='EventName')
     
     # Create bar plot
-    fig = px.bar(win_rate_df, x='Division Group', y='Win Rate', 
-                 title=f"Hong's Win Rate in Sequential Matches by Division Type ({', '.join(event_filter) if event_filter else 'All Events'})",
-                 color='Division Group', 
-                 color_discrete_map={'Pair & Team': '#1f77b4', 'Individual': '#ff7f0e'})
-    fig.update_layout(yaxis_title="Win Rate", yaxis_tickformat=".2%", 
-                      shapes=[dict(type='line', x0=-0.5, x1=1.5, y0=0.5, y1=0.5, 
-                                   line=dict(color='red', dash='dash'))])
+    fig = px.bar(win_rate_df, x='EventName', y='Win Rate', 
+                 color='EventName')
+    fig.update_layout(yaxis_title="Hong Win Rate", yaxis_tickformat=".2%", 
+                      shapes=[dict(type='line', x0=-0.5, x1=len(win_rate_df)-0.5, y0=0.5, y1=0.5, 
+                                   line=dict(color='red', dash='dash'))],
+                      showlegend=False)
     
     # Statistical test results
     stats_text = [
         html.H3("Statistical Test Results:"),
         html.Ul([
             html.Li([
-                f"{row['Division Group']}: ",
+                f"{row['EventName']}: ",
                 html.Br(),
                 f"  - Wins: {int(row['Hong Wins'])}/{int(row['Total Matches'])} ({row['Win Rate']:.2%})",
                 html.Br(),

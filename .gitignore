@@ -1,6 +1,6 @@
 #System Build folders
 /.vscode
-/__pycache__
+**/__pycache__
 PoomsaeProConnector/__pycache__
 
 #LaTeX build Files

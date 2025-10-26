@@ -3,7 +3,7 @@ import statsmodels.stats.inter_rater as ir
 import dash
 from dash import html, dcc, Input, Output
 import plotly.express as px
-from utils import categorize_event, load_data, categorize_division, extract_age
+from utils.PoomsaeProCleaning import categorize_event, load_data, categorize_division, extract_age
 from scipy.stats import norm
 
 # Compute referee ratings with tiebreakers
