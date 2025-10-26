@@ -1,10 +1,14 @@
+# callbacks.py
 import pandas as pd
+import numpy as np
 from dash.dependencies import Input, Output
 from RefereeAnalysis.data_processing import compute_stats
 
-def register_callbacks(app, df:pd.DataFrame, raw_data_columns):
+
+def register_callbacks(app, df: pd.DataFrame, raw_data_columns):
     """Register Dash callbacks for the app."""
-    # Callback to update referee dropdown based on selected events
+
+    # ── Update referee dropdown based on selected events ──
     @app.callback(
         Output('referee-filter', 'options'),
         Input('event-filter', 'value')
@@ -15,13 +19,15 @@ def register_callbacks(app, df:pd.DataFrame, raw_data_columns):
         filtered_df = df[df['EventName'].isin(selected_events)]
         return [{'label': name, 'value': name} for name in sorted(filtered_df['RefereeName'].unique())]
 
-    # Callback to update tables and box plots based on filters
+    # ── Update tables + box plots + bar charts ──
     @app.callback(
         [
             Output('stats-table', 'data'),
             Output('raw-data-table', 'data'),
             Output('acc-diff-boxplot', 'figure'),
-            Output('pre-diff-boxplot', 'figure')
+            Output('pre-diff-boxplot', 'figure'),
+            Output('acc-diff-bar', 'figure'),
+            Output('pre-diff-bar', 'figure')
         ],
         [
             Input('referee-filter', 'value'),
@@ -30,10 +36,9 @@ def register_callbacks(app, df:pd.DataFrame, raw_data_columns):
             Input('belt-filter', 'value')
         ]
     )
-    def update_tables_and_boxplots(referee, event, category, belt):
-        # Start with full df
+    def update_tables_and_plots(referee, event, category, belt):
         filtered_df = df.copy()
-        
+
         # Apply filters
         if referee:
             filtered_df = filtered_df[filtered_df['RefereeName'].isin(referee)]
@@ -43,80 +48,97 @@ def register_callbacks(app, df:pd.DataFrame, raw_data_columns):
             filtered_df = filtered_df[filtered_df['Event_Category'] == category]
         if belt:
             filtered_df = filtered_df[filtered_df['Belt'].isin(belt)]
-        
-        # Compute stats_df based on filtered data
+
         if filtered_df.empty:
-            return [], [], {'data': [], 'layout': {}}, {'data': [], 'layout': {}}
-        
-        # Collect all acc_diffs and pre_diffs across groups
+            empty_fig = {'data': [], 'layout': {}}
+            return [], [], empty_fig, empty_fig, empty_fig, empty_fig
+
+        # ── Compute stats & collect differences ──
         all_acc_diffs = []
         all_pre_diffs = []
         stats_df = filtered_df.groupby(['RefereeName', 'EventName', 'Event_Category']).apply(
             lambda g: compute_stats(g)[0], include_groups=False
         ).reset_index()
-        
-        # Collect differences for box plots
+
         for _, group in filtered_df.groupby(['RefereeName', 'EventName', 'Event_Category']):
             _, acc_diffs, pre_diffs = compute_stats(group)
             if not acc_diffs.empty:
                 all_acc_diffs.extend(acc_diffs)
             if not pre_diffs.empty:
                 all_pre_diffs.extend(pre_diffs)
-        
+
         all_acc_diffs = pd.Series(all_acc_diffs)
         all_pre_diffs = pd.Series(all_pre_diffs)
-        
-        # Round numeric columns for display to 3 decimal places
-        numeric_cols = ['Correlation', 'Presentation_Diff_SD', 'Accuracy_Diff_SD', 'Presentation_Diff_Mean', 'Accuracy_Diff_Mean']
-        stats_df[numeric_cols] = stats_df[numeric_cols].round(3)
-        stats_df[numeric_cols] = stats_df[numeric_cols].fillna('-')
-        
-        # Select columns for raw data table
+
+        # Round stats
+        numeric_cols = ['Correlation', 'Presentation_Diff_SD', 'Accuracy_Diff_SD',
+                        'Presentation_Diff_Mean', 'Accuracy_Diff_Mean']
+        stats_df[numeric_cols] = stats_df[numeric_cols].round(3).fillna('-')
+
+        # Raw data
         raw_data_cols = [col['id'] for col in raw_data_columns]
         raw_data = filtered_df[raw_data_cols].copy()
-        
-        # Create Plotly box plots
-        acc_diff_boxplot = {
-            'data': [{
-                'type': 'box',
-                'y': all_acc_diffs.dropna().tolist(),
-                'name': 'Accuracy Difference',
-                'marker': {'color': '#1f77b4'},
-                'notched':True,
-                'boxpoints': 'outliers',
-                'jitter': 0.3,
-                'pointpos': 0
-            }],
-            'layout': {
-                'title': {'text': 'Box Plot of Accuracy Differences'},
-                'yaxis': {'title': 'Accuracy Difference'},
-                'xaxis': {'showticklabels': False},
-                'showlegend': False
+
+        # ── Bar Charts ──
+        def make_bar_chart(data_series, title, color):
+            if data_series.empty:
+                return {'data': [], 'layout': {}}
+
+            # auto bin resolution
+            hist, bin_edges = np.histogram(data_series.dropna(), bins='auto', density=True)
+            bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+
+            return {
+                'data': [{
+                    'type': 'bar',
+                    'x': bin_centers,
+                    'y': hist,
+                    'marker': {'color': color},
+                    'hovertemplate': 'Diff: %{x:.3f}<br>Count: %{y}<extra></extra>'
+                }],
+                'layout': {
+                    'title': title,
+                    'xaxis': {'title': 'Score Difference'},
+                    'yaxis': {'title': 'Count'},
+                    'bargap': 0.05
+                }
             }
-        }
-        
-        pre_diff_boxplot = {
-            'data': [{
-                'type': 'box',
-                'y': all_pre_diffs.dropna().tolist(),
-                'name': 'Presentation Difference',
-                'marker': {'color': '#ff7f0e'},
-                'notched':True,
-                'boxpoints': 'outliers',
-                'jitter': 0.3,
-                'pointpos': 0
-            }],
-            'layout': {
-                'title': {'text': 'Box Plot of Presentation Differences'},
-                'yaxis': {'title': 'Presentation Difference'},
-                'xaxis': {'showticklabels': False},
-                'showlegend': False
-            }
-        }
-        
+
+        # ── Box Plots ──
+        def make_box_chart(data_series, title, color):
+            if data_series.empty:
+                return {'data': [], 'layout': {}}
+            
+            return {
+                'data': [{
+                    'type': 'box',
+                    'y': all_pre_diffs.dropna().tolist(),
+                    'name': 'Score Difference',
+                    'marker': {'color': color},
+                    'notched': True,
+                    'boxpoints': 'outliers',
+                    'jitter': 0.3,
+                    'pointpos': 0
+                }],
+                'layout': {
+                    'title': title,
+                    'yaxis': {'title': 'Score Difference'},
+                    'xaxis': {'showticklabels': False},
+                    'showlegend': False
+                    }
+                }
+
+        acc_box = make_box_chart(all_acc_diffs, 'Accuracy Difference Distribution', '#1f77b4')
+        pre_box = make_box_chart(all_pre_diffs, 'Box Plot of Presentation Differences', '#ff7f0e')
+
+        acc_bar = make_bar_chart(all_acc_diffs, 'Accuracy Difference', '#1f77b4')
+        pre_bar = make_bar_chart(all_pre_diffs, 'Presentation Difference', '#ff7f0e')
+
         return (
             stats_df.to_dict('records'),
             raw_data.to_dict('records'),
-            acc_diff_boxplot,
-            pre_diff_boxplot
+            acc_box,
+            pre_box,
+            acc_bar,
+            pre_bar
         )
