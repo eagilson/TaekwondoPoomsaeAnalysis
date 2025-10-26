@@ -78,8 +78,8 @@ def register_callbacks(app, df: pd.DataFrame, raw_data_columns):
         # Box & Bar (All Rounds)
         acc_box = make_box_chart(all_acc_diffs, 'Accuracy Difference Distribution', '#1f77b4')
         pre_box = make_box_chart(all_pre_diffs, 'Presentation Difference Distribution', '#ff7f0e')
-        acc_bar = make_bar_chart(all_acc_diffs, 'Accuracy Difference Distribution', '#1f77b4')
-        pre_bar = make_bar_chart(all_pre_diffs, 'Presentation Difference Distribution', '#ff7f0e')
+        acc_bar = make_bar_chart(all_acc_diffs, 'Accuracy Difference Distribution', '#1f77b4', 0.03)
+        pre_bar = make_bar_chart(all_pre_diffs, 'Presentation Difference Distribution', '#ff7f0e', 0.03)
 
         # Raw data
         raw_data_cols = [col['id'] for col in raw_data_columns]

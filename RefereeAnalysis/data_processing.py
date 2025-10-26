@@ -133,12 +133,16 @@ def singleeliminationgaps(df: pd.DataFrame) -> pd.DataFrame:
             if not keep_match:
                 continue  # Skip match only if ALL forms fail
 
-            # Determine winner/loser
-            placement1 = row1.get('Referee_Placement', np.nan)
-            placement2 = row2.get('Referee_Placement', np.nan)
+            # Determine winner/loser for the Poomsae, not overall
+            total1 = row1.get(f'Acc_Avg_{form}', np.nan) + row1.get(f'Pre_Avg_{form}', np.nan)
+            total2 = row2.get(f'Acc_Avg_{form}', np.nan) + row2.get(f'Pre_Avg_{form}', np.nan)
+            #placement1 = row1.get('Referee_Placement', np.nan)
+            #placement2 = row2.get('Referee_Placement', np.nan)
 
-            if pd.notna(placement1) and pd.notna(placement2):
-                if placement1 == 1 or (placement1 == 1.5 and placement2 == 1.5):
+            #if pd.notna(placement1) and pd.notna(placement2):
+            if pd.notna(total1) and pd.notna(total2):
+                #if placement1 == 1 or (placement1 == 1.5 and placement2 == 1.5):
+                if total1 >= total2:
                     winner, loser = row1, row2
                 else:
                     winner, loser = row2, row1
@@ -157,6 +161,7 @@ def singleeliminationgaps(df: pd.DataFrame) -> pd.DataFrame:
                 val2 = loser.get(comp, np.nan)
                 if pd.notna(val1) and pd.notna(val2) and val1 != -1 and val2 != -1:
                     gaps[f'{comp}_Gap'] = val1 - val2
+                    # need to change
                 else:
                     gaps[f'{comp}_Gap'] = np.nan
 

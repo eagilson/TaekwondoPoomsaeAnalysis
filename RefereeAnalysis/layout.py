@@ -155,21 +155,17 @@ def layout(app, df, raw_data_columns):
                         id="loading-se-gaps",
                         type="circle",
                         children=[
-                            # ── ROW 1 : Accuracy Gap Distribution per Referee ──
+                            # ── Gap Distribution per Referee ──
                             html.Div([
                                 dcc.Graph(
                                     id='se-acc-gap-bar',
                                     style={'width': '50%', 'padding': '10px'}
                                 ),
-                            ], style={'display': 'flex', 'justifyContent': 'center', 'width': '100%'}),
-
-                            # ── ROW 2 : Presentation Gap Distribution per Referee ──
-                            html.Div([
                                 dcc.Graph(
                                     id='se-pre-gap-bar',
                                     style={'width': '50%', 'padding': '10px'}
                                 ),
-                            ], style={'display': 'flex', 'justifyContent': 'center', 'width': '100%'})
+                            ], style={'display': 'flex', 'justifyContent': 'space-between', 'width': '100%'})
                         ]
                     )
                 ])
