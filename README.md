@@ -48,3 +48,5 @@ Steps to build the PoomsaePro data for analysis:
 # Competition Documentation
 
 The LaTeX folder contains code to generate Official Assignment sheets for use at events. This requires compiling using LaTeX and a file titled logo.jpg added in the Image folder for the sheet being generated.
+
+python -m RefereeAnalysis.dashboard

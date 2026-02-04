@@ -2,7 +2,7 @@ import json
 import sqlite3
 import pandas as pd
 
-from utils.PoomsaeProCleaning import worksheet_exists
+from utils import worksheet_exists
 
 #connect to the database
 conn = sqlite3.connect('PoomsaeProConnector/PoomsaePro.db')
