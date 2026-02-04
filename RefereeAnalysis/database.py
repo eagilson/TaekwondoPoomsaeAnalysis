@@ -38,6 +38,7 @@ def compute_referee_placement(group):
         acc_a = group.at[idx, 'Accuracy_A'] if 'Accuracy_A' in group.columns else np.nan
         pre_a = group.at[idx, 'Presentation_A'] if 'Presentation_A' in group.columns else np.nan
         form_b = group.at[idx, 'FormName_B'] if 'FormName_B' in group.columns else ''
+        form_a = group.at[idx, 'FormName_A'] if 'FormName_A' in group.columns else ''
         acc_b = group.at[idx, 'Accuracy_B'] if 'Accuracy_B' in group.columns else np.nan
         pre_b = group.at[idx, 'Presentation_B'] if 'Presentation_B' in group.columns else np.nan
         acc_t = group.at[idx, 'Accuracy_T'] if 'Accuracy_T' in group.columns else np.nan
@@ -51,12 +52,22 @@ def compute_referee_placement(group):
             group.at[idx, 'Avg_Acc_Pres_AB'] = np.mean(ab_scores)
         
         # Tiebreaker 1: Average of Presentation for A and B (if B is valid)
-        if pd.notna(pre_a) and pre_a != -1:
+        # Recognized
+        if pd.notna(pre_a) and pre_a != -1 and form_a != 'Freestyle':
             pres_scores = [pre_a]
             if form_b not in [None, 'None', ''] and pd.notna(pre_b) and pre_b != -1:
                 pres_scores.append(pre_b)
             group.at[idx, 'Avg_Pres_AB'] = np.mean(pres_scores)
-        
+        # Freestyle
+        # Technical is tiebreaker for Freestyle
+        # Technical is stored in the Accuracy column
+        if pd.notna(pre_a) and pre_a != -1 and form_a == 'Freestyle':
+            pres_scores = [acc_a]
+            group.at[idx, 'Avg_Pres_AB'] = np.mean(pres_scores)
+        # Mixed
+        # Mixed tiebreaker is Freestyle score
+        # Need to check if Poomsae B is Freestyle
+
         # Tiebreaker 2: Acc+Pres for T (if T is valid)
         if (group.at[idx, 'FormName_T'] not in [None, 'None', ''] if 'FormName_T' in group.columns else False) and pd.notna(acc_t) and pd.notna(pre_t) and acc_t != -1 and pre_t != -1:
             group.at[idx, 'Acc_Pres_T'] = acc_t + pre_t

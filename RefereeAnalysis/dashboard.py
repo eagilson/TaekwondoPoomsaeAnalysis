@@ -18,14 +18,14 @@ raw_data_columns = [
     {'name': 'Round', 'id': 'Round'},
     {'name': 'Match Number', 'id': 'MatchNo'},
     {'name': 'Performance ID', 'id': 'Performance_ID'},
+    {'name': 'Referee Placement', 'id': 'Referee_Placement'},
+    {'name': 'Official Placement', 'id': 'Placement'},
     {'name': 'Accuracy A', 'id': 'Accuracy_A'},
     {'name': 'Presentation A', 'id': 'Presentation_A'},
     {'name': 'Accuracy B', 'id': 'Accuracy_B'},
     {'name': 'Presentation B', 'id': 'Presentation_B'},
     {'name': 'Accuracy T', 'id': 'Accuracy_T'},
     {'name': 'Presentation T', 'id': 'Presentation_T'},
-    {'name': 'Referee Placement', 'id': 'Referee_Placement'},
-    {'name': 'Official Placement', 'id': 'Placement'},
 ]
 
 # Initialize Dash app
