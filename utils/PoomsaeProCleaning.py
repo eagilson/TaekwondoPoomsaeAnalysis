@@ -138,3 +138,38 @@ def extract_age(text: str) -> str:
     
     # Extract substring and trim spaces
     return text[start:end].strip()
+
+def translate_simultaneous(value: int) -> str:
+    """
+    Translates Simultaneous flag to 'Sequential' or 'Simultaneous'
+    
+    Args:
+        value (int): Simultaneous flag (0 or 1)
+        
+    Returns:
+        str: 'Sequential' if 0, 'Simultaneous' if 1
+    """
+    
+    mapping = {0: 'Sequential', 1: 'Simultaneous'}
+    
+    return mapping.get(value, 'Unknown')
+
+
+def draw_type(poomsae1: str) -> str:
+    """
+    Translates the values in Poomsae 1 of Division Names into the draw type
+    
+    Args:
+        poomsae1 (str): Name of the first poomsae
+        
+    Returns:
+        Draw_Type (str): Random or Designated
+    """
+
+    if poomsae1 is None:
+        return 'Designated'
+    
+    try:
+        return 'Random' if 'random' in str(poomsae1).lower() else 'Designated'
+    except:
+        return 'Designated'

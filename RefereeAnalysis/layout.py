@@ -108,7 +108,7 @@ def layout(app, df, raw_data_columns):
             ]),
 
             # ── Score Difference Box Plots + Bar Charts ──
-            dcc.Tab(label='Score Difference Box Plots', children=[
+            dcc.Tab(label='Score Difference Histogram', children=[
                 html.Div([
                     html.H3("Distribution of Referee Score Differences from the Final Score", 
                             style={'textAlign': 'center', 'margin': '20px 0 10px'}),
