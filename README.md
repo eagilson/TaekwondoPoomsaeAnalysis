@@ -1,6 +1,6 @@
 # Project Objective
 
-This project contains code to analyze Taekwondo Poomsae scores. It consolidates information from multiple events into a single sqlLite database for further analysis.
+This project contains code to analyze Taekwondo Poomsae scores. It consolidates information from multiple events into a single sqlLite database for further analysis. 
 
 # Event Data
 
@@ -13,6 +13,11 @@ Python
 SQLlite
 LaTeX
 
+
+This project utilizes a Makefile to streamline data maintence and running the project. All dashboards can be run utilizing *make* commands. 
+
+*make help* lists all available make commands.
+
 # Referee Analysis
 
 There are 3 dashboards to analyze referee performance.
@@ -23,7 +28,7 @@ Running RefereeAnalysis.py generates a dashboard to examine individual referee's
 
 1. **Referee Scoring Performance Dashboard** provides summary statistics for each referee aggregated at the event level.
 2. **Score Detail** provides the score details used to compute the summary statistics.
-3. **Score Difference Box Plots** graphs the box plots for the Accuracy and Presentation score differences.
+3. **Score Difference** graphs the Accuracy and Presentation score differences.
 
 ## Single Elimination Consistency 
 
@@ -41,12 +46,12 @@ Each Poomsae Scoring System utilized different database structures.  A separate 
 The default import functionality assumes a PoomsaePro database. The PP_ScoresV2c.accdb and PP_ScoresV3c.accdb databases are currently supported. Support for earlier versions will be added as time permits.
 
 Steps to build the PoomsaePro data for analysis:
-1. PoomsaeProConnector/PoomsaeProConnection.py is used to build the database of scores
-2. PoomsaeProConnector/PoomsaeProRefereeCreation.py is run to generate the excel file to record referee position.
-3. PoomsaeProConnector/PoomsaeProRefereeImport.py is run to import the referee positions into the database.
+1. Run *make poomsaepro-build* to create the databases and any missing referee assignment excel files
+2. Populate the referee assignment excel files
+3. Run *make referee-import* to import the referee assignments
+
+If all referee assignment excel files are already populated, run *make poomsaepro-build-all* to build the database and import he referee assignments in one command.
 
 # Competition Documentation
 
 The LaTeX folder contains code to generate Official Assignment sheets for use at events. This requires compiling using LaTeX and a file titled logo.jpg added in the Image folder for the sheet being generated.
-
-python -m RefereeAnalysis.dashboard

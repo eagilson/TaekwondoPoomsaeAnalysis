@@ -28,7 +28,63 @@ SELECT
                 WHEN 15 THEN D.Ro2MaleSimul--R2
                 ELSE 0
         END 
-    END AS Simultaneous
+    END AS Simultaneous,
+	(SELECT PN.Poomsae FROM Poomsae PN WHERE
+		E.DatabaseID = PN.DatabaseID
+		AND PN.Poomsae_ID = (
+			CASE G.Gender_ID
+				WHEN 2 THEN --Female
+					CASE RND.Round_ID
+						WHEN 9 THEN D.Ro128Female1--R128
+						WHEN 10 THEN D.Ro64Female1--R64
+						WHEN 11 THEN D.Ro32Female1--R32
+						WHEN 12 THEN D.Ro16Female1--R16
+						WHEN 13 THEN D.Ro8Female1--R8
+						WHEN 14 THEN D.Ro4Female1--R4
+						WHEN 15 THEN D.Ro2Female1--R2
+						ELSE 'NONE'
+					END 
+				ELSE --Male & Coed
+					CASE RND.Round_ID
+						WHEN 9 THEN D.Ro128Male1--R128
+						WHEN 10 THEN D.Ro64Male1--R64
+						WHEN 11 THEN D.Ro32Male1--R32
+						WHEN 12 THEN D.Ro16Male1--R16
+						WHEN 13 THEN D.Ro8Male1--R8
+						WHEN 14 THEN D.Ro4Male1--R4
+						WHEN 15 THEN D.Ro2Male1--R2
+						ELSE 'NONE'
+				END 
+			END)
+	)AS Poomsae1,
+		(SELECT PN.Poomsae FROM Poomsae PN WHERE
+		E.DatabaseID = PN.DatabaseID
+		AND PN.Poomsae_ID = (
+			CASE G.Gender_ID
+				WHEN 2 THEN --Female
+					CASE RND.Round_ID
+						WHEN 9 THEN D.Ro128Female2--R128
+						WHEN 10 THEN D.Ro64Female2--R64
+						WHEN 11 THEN D.Ro32Female2--R32
+						WHEN 12 THEN D.Ro16Female2--R16
+						WHEN 13 THEN D.Ro8Female2--R8
+						WHEN 14 THEN D.Ro4Female2--R4
+						WHEN 15 THEN D.Ro2Female2--R2
+						ELSE 'NONE'
+					END 
+				ELSE --Male & Coed
+					CASE RND.Round_ID
+						WHEN 9 THEN D.Ro128Male2--R128
+						WHEN 10 THEN D.Ro64Male2--R64
+						WHEN 11 THEN D.Ro32Male2--R32
+						WHEN 12 THEN D.Ro16Male2--R16
+						WHEN 13 THEN D.Ro8Male2--R8
+						WHEN 14 THEN D.Ro4Male2--R4
+						WHEN 15 THEN D.Ro2Male2--R2
+						ELSE 'NONE'
+				END 
+			END)
+	)AS Poomsae2
 FROM 
     Events E,
     PoomsaeScores P,

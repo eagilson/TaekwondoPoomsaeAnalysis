@@ -19,4 +19,5 @@ PoomsaeProConnector/PoomsaePro.db
 
 #Ad Hoc Files for specific events
 output.txt
-PoomsaeProConnector/2024GPFinalFix.py
+#folder for special build scripts
+PoomsaeProConnector/Custom 

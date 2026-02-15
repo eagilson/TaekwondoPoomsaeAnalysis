@@ -22,8 +22,8 @@ def register_callbacks(app, df: pd.DataFrame, raw_data_columns):
         [
             Output('stats-table', 'data'),
             Output('raw-data-table', 'data'),
-            Output('acc-diff-boxplot', 'figure'),
-            Output('pre-diff-boxplot', 'figure'),
+            #Output('acc-diff-boxplot', 'figure'),
+            #Output('pre-diff-boxplot', 'figure'),
             Output('acc-diff-bar', 'figure'),
             Output('pre-diff-bar', 'figure'),
             Output('se-acc-gap-bar', 'figure'),
@@ -76,8 +76,8 @@ def register_callbacks(app, df: pd.DataFrame, raw_data_columns):
         stats_df[numeric_cols] = stats_df[numeric_cols].round(3).fillna('-')
 
         # Box & Bar (All Rounds)
-        acc_box = make_box_chart(all_acc_diffs, 'Accuracy Difference Distribution', '#1f77b4')
-        pre_box = make_box_chart(all_pre_diffs, 'Presentation Difference Distribution', '#ff7f0e')
+        #acc_box = make_box_chart(all_acc_diffs, 'Accuracy Difference Distribution', '#1f77b4')
+        #pre_box = make_box_chart(all_pre_diffs, 'Presentation Difference Distribution', '#ff7f0e')
         acc_bar = make_bar_chart(all_acc_diffs, 'Accuracy Difference Distribution', '#1f77b4', 0.03)
         pre_bar = make_bar_chart(all_pre_diffs, 'Presentation Difference Distribution', '#ff7f0e', 0.03)
 
@@ -111,8 +111,8 @@ def register_callbacks(app, df: pd.DataFrame, raw_data_columns):
         return (
             stats_df.to_dict('records'),
             raw_data.to_dict('records'),
-            acc_box,
-            pre_box,
+            #acc_box,
+            #pre_box,
             acc_bar,
             pre_bar,
             se_acc_gap_bar,

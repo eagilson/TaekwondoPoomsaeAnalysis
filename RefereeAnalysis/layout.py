@@ -117,17 +117,17 @@ def layout(app, df, raw_data_columns):
                         type="circle",
                         children=[
                             # ── ROW 1 : Box Plots ──
-                            html.Div([
-                                dcc.Graph(
-                                    id='acc-diff-boxplot',
-                                    style={'width': '50%', 'padding': '10px'}
-                                ),
-                                dcc.Graph(
-                                    id='pre-diff-boxplot',
-                                    style={'width': '50%', 'padding': '10px'}
-                                )
-                            ], style={'display': 'flex', 'flexWrap': 'nowrap',
-                                      'justifyContent': 'space-between', 'width': '100%'}),
+                            # html.Div([
+                            #     dcc.Graph(
+                            #         id='acc-diff-boxplot',
+                            #         style={'width': '50%', 'padding': '10px'}
+                            #     ),
+                            #     dcc.Graph(
+                            #         id='pre-diff-boxplot',
+                            #         style={'width': '50%', 'padding': '10px'}
+                            #     )
+                            # ], style={'display': 'flex', 'flexWrap': 'nowrap',
+                            #           'justifyContent': 'space-between', 'width': '100%'}),
 
                             # ── ROW 2 : Bar Charts ──
                             html.Div([
