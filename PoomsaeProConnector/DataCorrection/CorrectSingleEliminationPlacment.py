@@ -6,7 +6,6 @@ The Post-2025 convention is the loser's place is populated. The winner's place i
 """
 
 import sqlite3
-import pandas as pd
 
 # Connect to SQLite database
 db_path = 'PoomsaeProConnector/PoomsaePro.db'

@@ -13,8 +13,14 @@ help:           ## Show this help message
 	@echo ""
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
 
-# Install Python & PIP requirements
-#pip install pip-upgrade-all
+# Install Python, PIP, & LaTeX requirements
+# pip install pip-upgrade-all
+
+# Generate a list of installed packages and upgrade them at once
+.PHONY: upgrade-all-safe
+upgrade-all-safe: ## Upgrades all Python packages with PIP
+	. .venv/bin/activate
+	pip-upgrade-all
 
 # Build Poomsae Pro Database
 .PHONY: poomsaepro-build
@@ -69,19 +75,17 @@ single-elmin: ## Runs Single Elimination Consistency
 
 # Chung Sequential Advantage
 .PHONY: chung-adv
-chung-adv: ## Runs Chung Sequential Advantace
+chung-adv: ## Runs Chung Sequential Advantage
 	. .venv/bin/activate
-	python ChungSequentialAdvantage.py
+	python -m ChungSequentialAdvantage.dashboard
+
+#python ChungSequentialAdvantage.py
 
 .PHONY: chung-adv-pair
-chung-adv-pair: ## Runs Chung Sequential Advantace
+chung-adv-pair: ## Runs Chung Sequential Advantage
 	. .venv/bin/activate
 	python ChungSequentialAdvantage-PairTeam.py
 
 # LaTeX build all Assignment & Eval Sheets
-
-# Generate a list of installed packages and upgrade them at once
-.PHONY: upgrade-all-safe
-upgrade-all-safe: ## Upgrades all Python packages with PIP
-	. .venv/bin/activate
-	pip-upgrade-all
+.PHONY: build-forms
+build-forms: ## Build all LaTeX forms (TBD)
