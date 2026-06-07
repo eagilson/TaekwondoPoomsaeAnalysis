@@ -93,5 +93,5 @@ def main(mdb_file):
 
 if __name__ == "__main__":
     # Replace with the path to your Access database file
-    database_file = "data/2024 USATKD Nationals/Friday - PP_ScoresV2c_be.accdb"
+    database_file = "data/2026/2026 USATKD Open East/PP_ScoresV4c - Day 2.accdb"
     main(database_file)

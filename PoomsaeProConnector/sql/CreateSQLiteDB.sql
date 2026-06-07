@@ -4,11 +4,12 @@ DROP TABLE IF EXISTS BCategory;
 DROP TABLE IF EXISTS BDivisionNames;
 DROP TABLE IF EXISTS BreakingScores;
 DROP TABLE IF EXISTS BreakingSettings;
-DROP TABLE IF EXISTS CategoryTbl;
+DROP TABLE IF EXISTS CategoryTbl;--New columns in V4c
 DROP TABLE IF EXISTS Color;
 DROP TABLE IF EXISTS CompMethod;
 DROP TABLE IF EXISTS Competitors;
-DROP TABLE IF EXISTS DivisionNames;
+DROP TABLE IF EXISTS DivisionNames; --New columns in V4c
+--Probably needs to split the tables
 DROP TABLE IF EXISTS Event_Info;
 DROP TABLE IF EXISTS GenderTbl;
 DROP TABLE IF EXISTS IndPoomsaeScores;
@@ -16,6 +17,7 @@ DROP TABLE IF EXISTS IndPoomsaeScoresDetails;
 DROP TABLE IF EXISTS IndTotalScores;
 DROP TABLE IF EXISTS Judges;
 DROP TABLE IF EXISTS Poomsae;
+DROP TABLE IF EXISTS PoomsaePreset; --New for Combo V4c database
 DROP TABLE IF EXISTS PoomsaeScores;
 DROP TABLE IF EXISTS Rank;
 DROP TABLE IF EXISTS RoundTbl;
@@ -62,6 +64,7 @@ ON CONFLICT (Gender_ID)
 DO NOTHING */
 
 --Event
+/* Custom table to store event & Database details */
 CREATE TABLE IF NOT EXISTS Events (
     DatabaseID INTEGER NOT NULL,
     EventName TEXT NOT NULL,
@@ -95,7 +98,7 @@ CREATE TABLE IF NOT EXISTS BDivisionNames
 ) WITHOUT ROWID;
 
 --Breaking Scores
-CREATE TABLE BreakingScores
+CREATE TABLE IF NOT EXISTS BreakingScores
  (
     DatabaseID INTEGER NOT NULL,
 	Performance_ID Integer NOT NULL, 
@@ -192,6 +195,27 @@ CREATE TABLE IF NOT EXISTS CategoryTbl
 	Category Text NOT NULL, 
 	Range_Min Integer, 
 	Range_Max Integer,
+	DefaultR2P1 Integer, 
+	DefaultR2P2 Integer, 
+	DefaultR2Sim Boolean NOT NULL, 
+	DefaultR4P1 Integer, 
+	DefaultR4P2 Integer, 
+	DefaultR4Sim Boolean NOT NULL, 
+	DefaultR8P1 Integer, 
+	DefaultR8P2 Integer,
+	DefaultR8Sim Boolean NOT NULL,
+	DefaultR16P1 Integer,
+	DefaultR16P2 Integer,
+	DefaultR16Sim Boolean NOT NULL,
+	DefaultR32P1 Integer,
+	DefaultR32P2 Integer,
+	DefaultR32Sim Boolean NOT NULL,
+	DefaultR64P1 Integer,
+	DefaultR64P2 Integer,
+	DefaultR64Sim Boolean NOT NULL,
+	DefaultR128P1 Integer,
+	DefaultR128P2 Integer,
+	DefaultR128Sim Boolean,
     PRIMARY KEY (DatabaseID, Category_ID)
 ) WITHOUT ROWID;
 
@@ -233,91 +257,117 @@ CREATE TABLE IF NOT EXISTS Competitors
 ) WITHOUT ROWID;
 
 --Division Names
+--Table changed in V4c
 CREATE TABLE IF NOT EXISTS DivisionNames
  (
     DatabaseID INTEGER NOT NULL,
 	Division_ID Integer, 
 	Division Text NOT NULL, 
 	FixedDivision Boolean NOT NULL, 
-	CompOrder Integer, 
+	CompOrder Integer, --V4c changed to Order
 	CompMeth_Black Integer, 
-	CompMeth_Color Integer, 
+	CompMeth_Red Integer, --V4c added
+	CompMeth_Blue Integer, --V4c added
+	CompMeth_Green Integer, --V4c added
+	CompMeth_Yellow Integer, --V4c added
+	CompMeth_Color Integer, --V4c removed
 	Range_Min Integer, 
 	Range_Max Integer, 
-	MaleYellowPrelim Integer, 
-	MaleYellowSemi Integer, 
-	MaleYellowFinal1 Integer, 
-	MaleYellowFinal2 Integer, 
-	FemaleYellowPrelim Integer, 
-	FemaleYellowSemi Integer, 
-	FemaleYellowFinal1 Integer, 
-	FemaleYellowFinal2 Integer, 
-	MaleGreenPrelim Integer, 
-	MaleGreenSemi Integer, 
-	MaleGreenFinal1 Integer, 
-	MaleGreenFinal2 Integer, 
-	FemaleGreenPrelim Integer, 
-	FemaleGreenSemi Integer, 
-	FemaleGreenFinal1 Integer, 
-	FemaleGreenFinal2 Integer, 
-	MaleBluePrelim Integer, 
-	MaleBlueSemi Integer, 
-	MaleBlueFinal1 Integer, 
-	MaleBlueFinal2 Integer, 
-	FemaleBluePrelim Integer, 
-	FemaleBlueSemi Integer, 
-	FemaleBlueFinal1 Integer, 
-	FemaleBlueFinal2 Integer, 
-	MaleRedPrelim Integer, 
-	MaleRedSemi Integer, 
-	MaleRedFinal1 Integer, 
-	MaleRedFinal2 Integer, 
-	FemaleRedPrelim Integer, 
-	FemaleRedSemi Integer, 
-	FemaleRedFinal1 Integer, 
-	FemaleRedFinal2 Integer, 
-	Ro2Male1 Integer, 
-	Ro2Male2 Integer, 
-	Ro2Female1 Integer, 
-	Ro2Female2 Integer, 
-	Ro4Male1 Integer, 
-	Ro4Male2 Integer, 
-	Ro4Female1 Integer, 
-	Ro4Female2 Integer, 
-	Ro8Male1 Integer, 
-	Ro8Male2 Integer, 
-	Ro8Female1 Integer, 
-	Ro8Female2 Integer, 
-	Ro16Male1 Integer, 
-	Ro16Male2 Integer, 
-	Ro16Female1 Integer, 
-	Ro16Female2 Integer, 
-	Ro32Male1 Integer, 
-	Ro32Male2 Integer, 
-	Ro32Female1 Integer, 
-	Ro32Female2 Integer, 
-	Ro64Male1 Integer, 
-	Ro64Male2 Integer, 
-	Ro64Female1 Integer, 
-	Ro64Female2 Integer, 
-	Ro128Male1 Integer, 
-	Ro128Male2 Integer, 
-	Ro128Female1 Integer, 
-	Ro128Female2 Integer, 
-	Ro2MaleSimul Boolean NOT NULL, 
-	Ro2FemaleSimul Boolean NOT NULL, 
-	Ro4MaleSimul Boolean NOT NULL, 
-	Ro4FemaleSimul Boolean NOT NULL, 
-	Ro8MaleSimul Boolean NOT NULL, 
-	Ro8FemaleSimul Boolean NOT NULL, 
-	Ro16MaleSimul Boolean NOT NULL, 
-	Ro16FemaleSimul Boolean NOT NULL, 
-	Ro32MaleSimul Boolean NOT NULL, 
-	Ro32FemaleSimul Boolean NOT NULL, 
-	Ro64MaleSimul Boolean NOT NULL, 
-	Ro64FemaleSimul Boolean NOT NULL, 
-	Ro128MaleSimul Boolean NOT NULL, 
-	Ro128FemaleSimul Boolean NOT NULL,
+	DefaultR2P1 Integer, --V4c added
+	DefaultR2P2 Integer, --V4c added
+	DefaultR2Sim Boolean NOT NULL, --V4c added
+	DefaultR4P1 Integer, --V4c added
+	DefaultR4P2 Integer, --V4c added
+	DefaultR4Sim Boolean NOT NULL, --V4c added
+	DefaultR8P1 Integer, --V4c added
+	DefaultR8P2 Integer, --V4c added
+	DefaultR8Sim Boolean NOT NULL, --V4c added
+	DefaultR16P1 Integer, --V4c added
+	DefaultR16P2 Integer, --V4c added
+	DefaultR16Sim Boolean NOT NULL, --V4c added
+	DefaultR32P1 Integer, --V4c added
+	DefaultR32P2 Integer, --V4c added
+	DefaultR32Sim Boolean NOT NULL, --V4c added
+	DefaultR64P1 Integer, --V4c added
+	DefaultR64P2 Integer, --V4c added
+	DefaultR64Sim Boolean NOT NULL, --V4c added
+	DefaultR128P1 Integer, --V4c added
+	DefaultR128P2 Integer, --V4c added
+	DefaultR128Sim Boolean NOT NULL, --V4c added
+	MaleYellowPrelim Integer, --V4c removed
+	MaleYellowSemi Integer, --V4c removed
+	MaleYellowFinal1 Integer, --V4c removed
+	MaleYellowFinal2 Integer, --V4c removed
+	FemaleYellowPrelim Integer, --V4c removed
+	FemaleYellowSemi Integer, --V4c removed
+	FemaleYellowFinal1 Integer, --V4c removed
+	FemaleYellowFinal2 Integer, --V4c removed
+	MaleGreenPrelim Integer, --V4c removed
+	MaleGreenSemi Integer, --V4c removed
+	MaleGreenFinal1 Integer, --V4c removed
+	MaleGreenFinal2 Integer, --V4c removed
+	FemaleGreenPrelim Integer, --V4c removed
+	FemaleGreenSemi Integer, --V4c removed
+	FemaleGreenFinal1 Integer, --V4c removed
+	FemaleGreenFinal2 Integer, --V4c removed
+	MaleBluePrelim Integer, --V4c removed
+	MaleBlueSemi Integer, --V4c removed
+	MaleBlueFinal1 Integer, --V4c removed
+	MaleBlueFinal2 Integer, --V4c removed
+	FemaleBluePrelim Integer, --V4c removed
+	FemaleBlueSemi Integer, --V4c removed
+	FemaleBlueFinal1 Integer, --V4c removed
+	FemaleBlueFinal2 Integer, --V4c removed
+	MaleRedPrelim Integer, --V4c removed
+	MaleRedSemi Integer, --V4c removed
+	MaleRedFinal1 Integer, --V4c removed
+	MaleRedFinal2 Integer, --V4c removed
+	FemaleRedPrelim Integer, --V4c removed
+	FemaleRedSemi Integer, --V4c removed
+	FemaleRedFinal1 Integer, --V4c removed
+	FemaleRedFinal2 Integer, --V4c removed
+	Ro2Male1 Integer, --V4c removed
+	Ro2Male2 Integer, --V4c removed
+	Ro2Female1 Integer, --V4c removed
+	Ro2Female2 Integer, --V4c removed
+	Ro4Male1 Integer, --V4c removed
+	Ro4Male2 Integer, --V4c removed
+	Ro4Female1 Integer, --V4c removed
+	Ro4Female2 Integer, --V4c removed
+	Ro8Male1 Integer, --V4c removed
+	Ro8Male2 Integer, --V4c removed
+	Ro8Female1 Integer, --V4c removed
+	Ro8Female2 Integer, --V4c removed
+	Ro16Male1 Integer, --V4c removed
+	Ro16Male2 Integer, --V4c removed
+	Ro16Female1 Integer, --V4c removed
+	Ro16Female2 Integer, --V4c removed
+	Ro32Male1 Integer, --V4c removed
+	Ro32Male2 Integer, --V4c removed
+	Ro32Female1 Integer, --V4c removed
+	Ro32Female2 Integer, --V4c removed
+	Ro64Male1 Integer, --V4c removed
+	Ro64Male2 Integer, --V4c removed
+	Ro64Female1 Integer, --V4c removed
+	Ro64Female2 Integer, --V4c removed
+	Ro128Male1 Integer, --V4c removed
+	Ro128Male2 Integer, --V4c removed
+	Ro128Female1 Integer, --V4c removed
+	Ro128Female2 Integer, --V4c removed
+	Ro2MaleSimul Boolean NOT NULL, --V4c removed
+	Ro2FemaleSimul Boolean NOT NULL, --V4c removed
+	Ro4MaleSimul Boolean NOT NULL, --V4c removed
+	Ro4FemaleSimul Boolean NOT NULL, --V4c removed
+	Ro8MaleSimul Boolean NOT NULL, --V4c removed
+	Ro8FemaleSimul Boolean NOT NULL, --V4c removed
+	Ro16MaleSimul Boolean NOT NULL, --V4c removed
+	Ro16FemaleSimul Boolean NOT NULL, --V4c removed
+	Ro32MaleSimul Boolean NOT NULL, --V4c removed
+	Ro32FemaleSimul Boolean NOT NULL, --V4c removed
+	Ro64MaleSimul Boolean NOT NULL, --V4c removed
+	Ro64FemaleSimul Boolean NOT NULL, --V4c removed
+	Ro128MaleSimul Boolean NOT NULL, --V4c removed
+	Ro128FemaleSimul Boolean NOT NULL, --V4c removed
     PRIMARY KEY (DatabaseID, Division_ID)
 ) WITHOUT ROWID;
 
@@ -592,6 +642,23 @@ CREATE TABLE IF NOT EXISTS Poomsae
     PRIMARY KEY (DatabaseID, Poomsae_ID)
 ) WITHOUT ROWID;
 
+--Poomsae Preset
+--New in V4c
+CREATE TABLE IF NOT EXISTS PoomsaePreset
+ (
+	DatabaseID INTEGER NOT NULL,
+	Preset_ID  INTEGER NOT NULL,
+	SelectRecord Boolean NOT NULL, 
+	Division Integer NOT NULL, 
+	Gender Integer NOT NULL, 
+	Category Integer NOT NULL, 
+	RoundName Integer NOT NULL, 
+	Poomsae_1 Integer, 
+	Poomsae_2 Integer, 
+	Simul_SE Boolean,
+	PRIMARY KEY (DatabaseID, Preset_ID, Division, Gender, Category, RoundName)
+) WITHOUT ROWID;
+
 --Poomsae Scores
 CREATE TABLE IF NOT EXISTS PoomsaeScores
  (
@@ -798,13 +865,17 @@ CREATE TABLE IF NOT EXISTS SEMatchList
 	ID Integer NOT NULL, 
 	MatchNo Text NOT NULL,
 	NextMatch Text NOT NULL, --2025-07
-	Breaking Boolean, --2025-07
+	Breaking Boolean NOT NULL, --2025-07
+	ChungCheck Boolean NOT NULL, --V4c
+	HongCheck Boolean NOT NULL, --V4c
+	RingNo Integer, --V4c
+	RingOrder Integer, --V4c
 	Gender Integer NOT NULL, 
 	Division Integer NOT NULL, 
 	Category Integer NOT NULL, 
 	Round Integer NOT NULL, 
 	MatchRef Integer NOT NULL,
-	Complete Boolean,
+	Complete Boolean NOT NULL,
     PRIMARY KEY (DatabaseID, ID)
 ) WITHOUT ROWID;
 

@@ -5,6 +5,7 @@ import json
 import sqlite3
 import pandas as pd
 from datetime import date
+from tableformatting import formatPP_Scores
 
 def formatPP_ScoresV2c(data, DatabaseID, tablename, event, start_date, databasename):
     #format data to match current tables
@@ -88,7 +89,7 @@ def formatPP_ScoresV2c(data, DatabaseID, tablename, event, start_date, databasen
     #inserts into the master database
     return datawid
 
-def extractPP_ScoresV2c(DatabaseID, database):
+def extractPP_Scores(DatabaseID, database):
     try:
         con_string = r'DRIVER={MDBTools};DBQ=' + database['path'] + ';'
         conn = pyodbc.connect(con_string)
@@ -120,8 +121,12 @@ def extractPP_ScoresV2c(DatabaseID, database):
                 sql = 'SELECT * FROM ['+ i.table_name + ']'
                 cureventdata.execute(sql)
                 data = cureventdata.fetchall()
+                #update data to match column count
+                curdatabase.execute(f"PRAGMA table_info("+tablename+")")
+                columns = curdatabase.fetchall()
+                column_count = len(columns)
                 if len(data)>0:
-                    datawid = formatPP_ScoresV2c(data, DatabaseID, tablename, event['event'], event['start-date'],database['databasename'])
+                    datawid = formatPP_Scores(data, DatabaseID, tablename, event['event'], event['start-date'],database['databasename'], column_count)
                     sql = 'INSERT INTO ' + tablename + ' VALUES ' + str(datawid).strip('[]')                    
                     curdatabase.execute(sql)
 
@@ -172,6 +177,10 @@ for event in events:
         #code below is for PP_ScoresV2c.accdb
 
         #Connect to MS Access Database
+        """
+        Revise this to pass databasename to the Extract function?
+        """
+        
         print(event['event'])
         match database['databasename']:
             case 'PP_ScoresV1b.accdb': #Breaking
@@ -185,15 +194,20 @@ for event in events:
             case 'PP_ScoresV3t.accdb': #Team Trials
                 print(database['databasename']+' code not created')
             case 'PP_ScoresV4t.accdb': #Team Trials
-                extractPP_ScoresV2c(DatabaseID, database)
+                extractPP_Scores(DatabaseID, database)
             case 'PP_ScoresV1c.accdb': #Combo
-                extractPP_ScoresV2c(DatabaseID, database)
+                extractPP_Scores(DatabaseID, database)
             case 'PP_ScoresV2c.accdb': #Combo
-                extractPP_ScoresV2c(DatabaseID, database)
+                extractPP_Scores(DatabaseID, database)
             case 'PP_ScoresV3c.accdb': #Combo for Simultaneous
                 #V2c and V3c only differ by the SEMatchList table
                 #DivisionNames table has a different column layout
-                extractPP_ScoresV2c(DatabaseID, database)
+                extractPP_Scores(DatabaseID, database)
+            case 'PP_ScoresV4c.accdb': #SE for Color Belts
+                #DivisionNames table has a new layout
+                #CategoryTbl table has a new layout
+                #New table PoomsaePreset
+                extractPP_Scores(DatabaseID, database)
             case _:
                 print(database['databasename']+' unknown database type.')
         
