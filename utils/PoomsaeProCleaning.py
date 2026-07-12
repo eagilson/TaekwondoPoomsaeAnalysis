@@ -52,6 +52,8 @@ def categorize_event(event: str) -> str:
             return 'Freestyle'
         case str(s) if 'demo' in s:
             return 'Demo'
+        case str(s) if 'traditional' in s:
+            return 'Traditional'
         case str(s) if 'para' in s:
             return 'Para'
         case str(s) if 'p10' in s:
