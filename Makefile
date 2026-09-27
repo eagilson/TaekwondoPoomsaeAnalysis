@@ -68,7 +68,7 @@ dashboard: ## Runs Referee Analysis Dashboard
 	python -m RefereeAnalysis.dashboard
 
 # Single Elimination Consistency
-.PHONY: single-elmin
+.PHONY: single-elimin
 single-elmin: ## Runs Single Elimination Consistency
 	. .venv/bin/activate
 	python SingleEliminationConsistency.py
@@ -80,11 +80,6 @@ chung-adv: ## Runs Chung Sequential Advantage
 	python -m ChungSequentialAdvantage.dashboard
 
 #python ChungSequentialAdvantage.py
-
-.PHONY: chung-adv-pair
-chung-adv-pair: ## Runs Chung Sequential Advantage
-	. .venv/bin/activate
-	python ChungSequentialAdvantage-PairTeam.py
 
 # LaTeX build all Assignment & Eval Sheets
 .PHONY: build-forms

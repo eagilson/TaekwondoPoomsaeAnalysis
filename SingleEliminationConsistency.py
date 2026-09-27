@@ -3,7 +3,7 @@ import statsmodels.stats.inter_rater as ir
 import dash
 from dash import html, dcc, Input, Output
 import plotly.express as px
-from utils.PoomsaeProCleaning import categorize_event, load_data, categorize_division, extract_age
+from utils.PoomsaeProCleaning import categorize_event, load_data, categorize_division, extract_age, categorize_belt
 from scipy.stats import norm
 
 # Compute referee ratings with tiebreakers
@@ -74,19 +74,17 @@ def compute_final_result(row_a, row_b):
 def pair_athletes(df):
     if df is None or not isinstance(df, pd.DataFrame):
         print("Error: Input DataFrame is None or invalid")
-        return pd.DataFrame()  # Return empty DataFrame instead of None
-    
-    # Verify required columns exist
+        return pd.DataFrame()
+
     required_columns = ['EventName', 'Division', 'DivisionAge', 'Gender', 'Category', 'Round_ID', 'OrderOfPerform', 'CompetitorNbr']
     missing_columns = [col for col in required_columns if col not in df.columns]
     if missing_columns:
         print(f"Error: Missing required columns in input DataFrame: {', '.join(missing_columns)}")
-        return pd.DataFrame()  # Return empty DataFrame instead of raising error
-    
+        return pd.DataFrame()
+
     paired_data = []
-    # Iterate over unique combinations of EventName, Division, Gender, Category, and Round_ID
     for (event_name, division, gender, category, round_id), group_df in df.groupby(['EventName', 'Division', 'Gender', 'Category', 'Round_ID']):
-        round_size = 2 ** (7 - (round_id - 9))  # Maximum number of athletes in the round
+        round_size = 2 ** (7 - (round_id - 9))
         target_sum = round_size + 1
         round_df = group_df.sort_values('OrderOfPerform')
         if len(round_df) > round_size:
@@ -94,27 +92,28 @@ def pair_athletes(df):
         for _, row_a in round_df.iterrows():
             order_a = row_a['OrderOfPerform']
             order_b = target_sum - order_a
-            # Find row_b with OrderOfPerform = target_sum - order_a
             row_b_candidates = round_df[round_df['OrderOfPerform'] == order_b]
             if not row_b_candidates.empty:
                 row_b = row_b_candidates.iloc[0]
-                # Skip if row_b is row_a or already paired (order_a < order_b to avoid duplicates)
                 if row_a['CompetitorNbr'] != row_b['CompetitorNbr'] and order_a < order_b:
-                    # Assign Chung (A) to the athlete with odd OrderOfPerform
                     if row_a['OrderOfPerform'] % 2 == 1:
                         chung_row, hong_row = row_a, row_b
                     else:
                         chung_row, hong_row = row_b, row_a
-                    ratings = pd.Series([compute_referee_ratings(chung_row, hong_row, ref) for ref in ['R', 'J1', 'J2', 'J3', 'J4']],
-                                       index=['referee1', 'referee2', 'referee3', 'referee4', 'referee5'])
+                    ratings = pd.Series(
+                        [compute_referee_ratings(chung_row, hong_row, ref) for ref in ['R', 'J1', 'J2', 'J3', 'J4']],
+                        index=['referee1', 'referee2', 'referee3', 'referee4', 'referee5']
+                    )
                     final_result = compute_final_result(chung_row, hong_row)
                     paired_data.append({
                         'EventName': chung_row['EventName'],
+                        'EventCategory': chung_row['EventCategory'],
                         'Division': chung_row['Division'],
                         'DivisionAge': chung_row['DivisionAge'],
                         'DivisionCategory': chung_row['DivisionCategory'],
                         'Gender': chung_row['Gender'],
                         'Category': chung_row['Category'],
+                        'Belt': chung_row['Belt'],
                         'Round_ID': round_id,
                         'Round_Name': f"Round of {round_size}",
                         'OrderOfPerform_A': chung_row['OrderOfPerform'],
@@ -130,7 +129,6 @@ def pair_athletes(df):
                     })
     return pd.DataFrame(paired_data)
 
-# Interpret Fleiss' Kappa
 def interpret_kappa(kappa):
     if kappa <= 0:
         return "No agreement (or worse than chance): Referees' ratings are highly inconsistent, possibly due to differing interpretations of Poomsae scoring criteria."
@@ -145,12 +143,11 @@ def interpret_kappa(kappa):
     else:
         return "Almost perfect agreement: Near-unanimous ratings, suggesting highly consistent referee judgments due to clear criteria and training."
 
-# Calculate metrics, including z-score, p-value, and match outcomes with ties
 def calculate_metrics(df_subset):
+    empty_outcomes = pd.DataFrame({'Outcome': [], 'Count': []})
     if df_subset is None or not isinstance(df_subset, pd.DataFrame) or df_subset.empty:
-        return None, None, None, None, None, pd.DataFrame({'Outcome': [], 'Count': []}), "No data available for selected events or divisions."
-    
-    # Three categories: 0 (Hong), 1 (Chung), 2 (Tie)
+        return None, None, None, None, None, empty_outcomes, "No data available for selected events or divisions."
+
     fleiss_data = [[sum(row[['referee1', 'referee2', 'referee3', 'referee4', 'referee5']] == 0),
                     sum(row[['referee1', 'referee2', 'referee3', 'referee4', 'referee5']] == 1),
                     sum(row[['referee1', 'referee2', 'referee3', 'referee4', 'referee5']] == 2)]
@@ -159,17 +156,17 @@ def calculate_metrics(df_subset):
         kappa = ir.fleiss_kappa(fleiss_data)
     except Exception as e:
         print(f"Error computing Fleiss' Kappa: {str(e)}")
-        return None, None, None, None, None, pd.DataFrame({'Outcome': [], 'Count': []}), "Cannot compute Kappa: insufficient or uniform ratings."
-    
+        return None, None, None, None, None, empty_outcomes, "Cannot compute Kappa: insufficient or uniform ratings."
+
     n_pairs = len(df_subset)
     n_referees = 5
     total_ratings = n_pairs * n_referees
-    P_bar = df_subset.apply(lambda row: (sum(row[['referee1', 'referee2', 'referee3', 'referee4', 'referee5']] == 0) * 
-                                        (sum(row[['referee1', 'referee2', 'referee3', 'referee4', 'referee5']] == 0) - 1) + 
-                                        sum(row[['referee1', 'referee2', 'referee3', 'referee4', 'referee5']] == 1) * 
+    P_bar = df_subset.apply(lambda row: (sum(row[['referee1', 'referee2', 'referee3', 'referee4', 'referee5']] == 0) *
+                                        (sum(row[['referee1', 'referee2', 'referee3', 'referee4', 'referee5']] == 0) - 1) +
+                                        sum(row[['referee1', 'referee2', 'referee3', 'referee4', 'referee5']] == 1) *
                                         (sum(row[['referee1', 'referee2', 'referee3', 'referee4', 'referee5']] == 1) - 1) +
-                                        sum(row[['referee1', 'referee2', 'referee3', 'referee4', 'referee5']] == 2) * 
-                                        (sum(row[['referee1', 'referee2', 'referee3', 'referee4', 'referee5']] == 2) - 1)) / 
+                                        sum(row[['referee1', 'referee2', 'referee3', 'referee4', 'referee5']] == 2) *
+                                        (sum(row[['referee1', 'referee2', 'referee3', 'referee4', 'referee5']] == 2) - 1)) /
                                         (n_referees * (n_referees - 1)), axis=1).mean()
     total_0s = sum(row[0] for row in fleiss_data)
     total_1s = sum(row[1] for row in fleiss_data)
@@ -178,42 +175,53 @@ def calculate_metrics(df_subset):
     p1 = total_1s / total_ratings
     p2 = total_2s / total_ratings
     P_e = p0**2 + p1**2 + p2**2
-    
-    # Calculate standard error
+
     p_j = [p0, p1, p2]
     se_numerator = P_bar + P_e - 2 * sum(p_j[j] * p_j[j] * P_bar for j in range(3)) - P_e**2
     se_denominator = (1 - P_e)**2 * n_referees * n_pairs
     se_kappa = (se_numerator / se_denominator)**0.5 if se_denominator != 0 else float('inf')
-    
-    # Calculate z-score and p-value
+
     z_score = kappa / se_kappa if se_kappa != 0 else float('inf')
     p_value = 2 * (1 - norm.cdf(abs(z_score))) if z_score != float('inf') else 0.0
-    
-    # Calculate match outcomes (X-Y-Z: agree-disagree-tie)
+
     outcomes = []
     for _, row in df_subset.iterrows():
         votes = row[['referee1', 'referee2', 'referee3', 'referee4', 'referee5']].values
-        winner = row['Final_Result']  # 1 (Chung) or 0 (Hong)
-        loser = 1 - winner  # Opposite of winner
-        agree_count = sum(votes == winner)  # Votes matching Final_Result
-        disagree_count = sum(votes == loser)  # Votes for loser
-        tie_count = sum(votes == 2)  # Tie votes
-        outcome = f"{agree_count}-{disagree_count}-{tie_count}"
-        outcomes.append(outcome)
-    
+        winner = row['Final_Result']
+        loser = 1 - winner
+        agree_count = sum(votes == winner)
+        disagree_count = sum(votes == loser)
+        tie_count = sum(votes == 2)
+        outcomes.append(f"{agree_count}-{disagree_count}-{tie_count}")
+
     outcome_counts = pd.Series(outcomes).value_counts()
     outcome_df = pd.DataFrame({
         'Outcome': outcome_counts.index,
         'Count': outcome_counts.values
     })
-    # Sort by wins (X) descending, then ties (Z) descending
     outcome_df['Wins'] = outcome_df['Outcome'].apply(lambda x: int(x.split('-')[0]))
     outcome_df['Ties'] = outcome_df['Outcome'].apply(lambda x: int(x.split('-')[2]))
     outcome_df = outcome_df.sort_values(by=['Wins', 'Ties'], ascending=[False, False])
-    outcome_df = outcome_df[['Outcome', 'Count']]  # Drop temporary columns
-    
-    kappa_interpretation = interpret_kappa(kappa)
-    return kappa, P_bar, P_e, z_score, p_value, outcome_df, kappa_interpretation
+    outcome_df = outcome_df[['Outcome', 'Count']]
+
+    return kappa, P_bar, P_e, z_score, p_value, outcome_df, interpret_kappa(kappa)
+
+def apply_filters(df, selected_event_types=None, selected_events=None, selected_division_categories=None,
+                  selected_division_ages=None, selected_belts=None, selected_rounds=None):
+    df_subset = df if isinstance(df, pd.DataFrame) else pd.DataFrame()
+    if selected_event_types:
+        df_subset = df_subset[df_subset['EventCategory'].isin(selected_event_types)]
+    if selected_events:
+        df_subset = df_subset[df_subset['EventName'].isin(selected_events)]
+    if selected_division_categories:
+        df_subset = df_subset[df_subset['DivisionCategory'].isin(selected_division_categories)]
+    if selected_division_ages:
+        df_subset = df_subset[df_subset['DivisionAge'].isin(selected_division_ages)]
+    if selected_belts:
+        df_subset = df_subset[df_subset['Belt'].isin(selected_belts)]
+    if selected_rounds:
+        df_subset = df_subset[df_subset['Round_Name'].isin(selected_rounds)]
+    return df_subset
 
 # Load data
 db_path = 'PoomsaeProConnector/PoomsaePro.db'
@@ -221,39 +229,48 @@ sql_file_path = 'sql/RefereeScoresSingleElimination.sql'
 df = load_data(db_path, sql_file_path)
 if df is None or not isinstance(df, pd.DataFrame):
     print("Error: Failed to load data from database")
-    df = pd.DataFrame()  # Initialize empty DataFrame to prevent None
+    df = pd.DataFrame()
 
-# Add categorizations
 if not df.empty:
     df['EventCategory'] = df['EventName'].apply(categorize_event)
     df['DivisionCategory'] = df['Division'].apply(categorize_division)
     df['DivisionAge'] = df['Division'].apply(extract_age)
+    df['Belt'] = df['Category'].apply(categorize_belt)
 else:
     print("Warning: No data loaded; proceeding with empty DataFrame")
 
-# Process data
 paired_df = pair_athletes(df)
 if paired_df is None or not isinstance(paired_df, pd.DataFrame):
     print("Error: pair_athletes returned None or invalid DataFrame")
-    paired_df = pd.DataFrame()  # Initialize empty DataFrame
+    paired_df = pd.DataFrame()
 
-# Initial metrics
 kappa, P_bar, P_e, z_score, p_value, outcome_df, kappa_interpretation = calculate_metrics(paired_df)
 
-# Dash Dashboard
 app = dash.Dash(__name__)
 
-# Dropdown options
-event_options = [{'label': event, 'value': event} for event in sorted(paired_df['EventName'].unique())] if not paired_df.empty else []
+event_type_order = ['Recognized', 'Freestyle', 'Traditional', 'Mixed', 'Para', 'Demo']
+event_type_options = []
+if not paired_df.empty and 'EventCategory' in paired_df.columns:
+    present_types = set(paired_df['EventCategory'].dropna().unique())
+    event_type_options = [{'label': t, 'value': t} for t in event_type_order if t in present_types]
+    event_type_options += [{'label': t, 'value': t} for t in sorted(present_types) if t not in event_type_order]
 division_category_options = [{'label': div, 'value': div} for div in sorted(paired_df['DivisionCategory'].unique())] if not paired_df.empty else []
 
 app.layout = html.Div([
     html.H1("Taekwondo Poomsae Referee Agreement Dashboard"),
-    html.Label("Select Event(s):"),
+    html.Label("Select Event Type(s):"),
+    dcc.Dropdown(
+        id='event-type-filter',
+        options=event_type_options,
+        value=None,
+        multi=True,
+        placeholder="Select one or more event types..."
+    ),
+    html.Label("Select Event(s):", style={'marginTop': '10px'}),
     dcc.Dropdown(
         id='event-filter',
-        options=event_options,
-        value=None,  # Default: all events
+        options=[],
+        value=None,
         multi=True,
         placeholder="Select one or more events..."
     ),
@@ -261,7 +278,7 @@ app.layout = html.Div([
     dcc.Dropdown(
         id='division-filter',
         options=division_category_options,
-        value=None,  # Default: all division categories
+        value=None,
         multi=True,
         placeholder="Select one or more division categories..."
     ),
@@ -269,9 +286,25 @@ app.layout = html.Div([
     dcc.Dropdown(
         id='division-selection',
         options=[],
-        value=None,  # Default: all divisions
+        value=None,
         multi=True,
         placeholder="Select one or more divisions..."
+    ),
+    html.Label("Select Belt(s):", style={'marginTop': '10px'}),
+    dcc.Dropdown(
+        id='belt-filter',
+        options=[],
+        value=None,
+        multi=True,
+        placeholder="Select one or more belts..."
+    ),
+    html.Label("Select Round Name(s):", style={'marginTop': '10px'}),
+    dcc.Dropdown(
+        id='round-filter',
+        options=[],
+        value=None,
+        multi=True,
+        placeholder="Select one or more rounds..."
     ),
     html.H3(id='kappa-display', children=f"Fleiss' Kappa: {kappa:.3f}" if kappa is not None else "Fleiss' Kappa: N/A"),
     html.H4(id='kappa-interpretation', children=f"Interpretation: {kappa_interpretation}"),
@@ -285,26 +318,64 @@ app.layout = html.Div([
     dcc.Graph(id='outcome-pie-chart')
 ])
 
-# Callback to update DivisionAge dropdown options
+@app.callback(
+    Output('event-filter', 'options'),
+    [Input('event-type-filter', 'value')]
+)
+def update_event_options(selected_event_types):
+    df_subset = apply_filters(paired_df, selected_event_types=selected_event_types)
+    if df_subset.empty or 'EventName' not in df_subset.columns:
+        return []
+    return [{'label': event, 'value': event} for event in sorted(df_subset['EventName'].dropna().unique())]
+
 @app.callback(
     Output('division-selection', 'options'),
-    [Input('event-filter', 'value'),
+    [Input('event-type-filter', 'value'),
+     Input('event-filter', 'value'),
      Input('division-filter', 'value')]
 )
-def update_division_age_options(selected_events, selected_division_categories):
-    df_subset = paired_df
-    if df_subset is None or not isinstance(df_subset, pd.DataFrame):
-        df_subset = pd.DataFrame()
-    
-    if selected_events:
-        df_subset = df_subset[df_subset['EventName'].isin(selected_events)]
-    if selected_division_categories:
-        df_subset = df_subset[df_subset['DivisionCategory'].isin(selected_division_categories)]
-    
-    division_age_options = [{'label': div, 'value': div} for div in sorted(df_subset['DivisionAge'].unique())] if not df_subset.empty else []
-    return division_age_options
+def update_division_age_options(selected_event_types, selected_events, selected_division_categories):
+    df_subset = apply_filters(paired_df, selected_event_types, selected_events, selected_division_categories)
+    if df_subset.empty or 'DivisionAge' not in df_subset.columns:
+        return []
+    return [{'label': div, 'value': div} for div in sorted(df_subset['DivisionAge'].dropna().unique())]
 
-# Callback to update metrics and charts
+@app.callback(
+    Output('belt-filter', 'options'),
+    [Input('event-type-filter', 'value'),
+     Input('event-filter', 'value'),
+     Input('division-filter', 'value'),
+     Input('division-selection', 'value')]
+)
+def update_belt_options(selected_event_types, selected_events, selected_division_categories, selected_division_ages):
+    df_subset = apply_filters(paired_df, selected_event_types, selected_events, selected_division_categories, selected_division_ages)
+    if df_subset.empty or 'Belt' not in df_subset.columns:
+        return []
+    belt_order = ['Yellow', 'Green', 'Blue', 'Red', 'Black']
+    present = list(df_subset['Belt'].dropna().unique())
+    ordered = [b for b in belt_order if b in present] + [b for b in sorted(present) if b not in belt_order]
+    return [{'label': belt, 'value': belt} for belt in ordered]
+
+@app.callback(
+    Output('round-filter', 'options'),
+    [Input('event-type-filter', 'value'),
+     Input('event-filter', 'value'),
+     Input('division-filter', 'value'),
+     Input('division-selection', 'value'),
+     Input('belt-filter', 'value')]
+)
+def update_round_options(selected_event_types, selected_events, selected_division_categories, selected_division_ages, selected_belts):
+    df_subset = apply_filters(paired_df, selected_event_types, selected_events, selected_division_categories, selected_division_ages, selected_belts)
+    if df_subset.empty or 'Round_Name' not in df_subset.columns:
+        return []
+    unique_rounds = df_subset['Round_Name'].dropna().unique()
+    def round_sort_key(name):
+        try:
+            return -int(str(name).split()[-1])
+        except Exception:
+            return 0
+    return [{'label': rnd, 'value': rnd} for rnd in sorted(unique_rounds, key=round_sort_key)]
+
 @app.callback(
     [Output('kappa-display', 'children'),
      Output('kappa-interpretation', 'children'),
@@ -314,25 +385,26 @@ def update_division_age_options(selected_events, selected_division_categories):
      Output('p-value', 'children'),
      Output('agreement-chart', 'figure'),
      Output('outcome-pie-chart', 'figure')],
-    [Input('event-filter', 'value'),
+    [Input('event-type-filter', 'value'),
+     Input('event-filter', 'value'),
      Input('division-filter', 'value'),
-     Input('division-selection', 'value')]
+     Input('division-selection', 'value'),
+     Input('belt-filter', 'value'),
+     Input('round-filter', 'value')]
 )
-def update_dashboard(selected_events, selected_division_categories, selected_division_ages):
-    df_subset = paired_df
-    if df_subset is None or not isinstance(df_subset, pd.DataFrame):
-        df_subset = pd.DataFrame()
-    
-    if selected_events:
-        df_subset = df_subset[df_subset['EventName'].isin(selected_events)]
-    if selected_division_categories:
-        df_subset = df_subset[df_subset['DivisionCategory'].isin(selected_division_categories)]
-    if selected_division_ages:
-        df_subset = df_subset[df_subset['DivisionAge'].isin(selected_division_ages)]
-    
+def update_dashboard(selected_event_types, selected_events, selected_division_categories, selected_division_ages, selected_belts, selected_rounds):
+    df_subset = apply_filters(
+        paired_df,
+        selected_event_types,
+        selected_events,
+        selected_division_categories,
+        selected_division_ages,
+        selected_belts,
+        selected_rounds
+    )
+
     kappa, P_bar, P_e, z_score, p_value, outcome_df, kappa_interpretation = calculate_metrics(df_subset)
-    
-    # Agreement bar chart
+
     chart_data = pd.DataFrame({
         'Metric': ['Observed Agreement', 'Expected Agreement'],
         'Value': [P_bar if P_bar is not None else 0, P_e if P_e is not None else 0]
@@ -340,15 +412,14 @@ def update_dashboard(selected_events, selected_division_categories, selected_div
     agreement_fig = px.bar(chart_data, x='Metric', y='Value',
                           title="Observed vs. Expected Agreement",
                           color='Metric', color_discrete_map={'Observed Agreement': '#1f77b4', 'Expected Agreement': '#ff7f0e'})
-    
-    # Match outcome pie chart
+
     if outcome_df.empty:
         outcome_fig = px.pie(names=['No Data'], values=[1], title="Match Outcomes (X-Y-Z: Agree-Disagree-Tie)")
     else:
         outcome_fig = px.pie(outcome_df, names='Outcome', values='Count',
                              title="Match Outcomes (X-Y-Z: Agree-Disagree-Tie)",
                              color_discrete_sequence=px.colors.qualitative.Set3)
-    
+
     return (
         f"Fleiss' Kappa: {kappa:.3f}" if kappa is not None else "Fleiss' Kappa: N/A",
         f"Interpretation: {kappa_interpretation}",
